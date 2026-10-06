@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/clothing_item.dart';
 import '../widgets/clothing_picker.dart';
+import 'add_clothing_screen.dart';
 import 'wardrobe_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -134,6 +135,31 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> addClothing() async {
+    final ClothingItem? newItem = await Navigator.push<ClothingItem>(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return const AddClothingScreen();
+        },
+      ),
+    );
+
+    if (newItem == null) {
+      return;
+    }
+
+    setState(() {
+      if (newItem.category == 'Top') {
+        tops.add(newItem);
+      } else if (newItem.category == 'Bottom') {
+        bottoms.add(newItem);
+      } else if (newItem.category == 'Shoes') {
+        shoes.add(newItem);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     ClothingItem currentTop = tops[currentTopIndex];
@@ -166,24 +192,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 16),
 
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return WardrobeScreen(
-                            clothingItems: allClothingItems,
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.checkroom),
-                  label: const Text('View Wardrobe'),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: addClothing,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Clothing'),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return WardrobeScreen(
+                              clothingItems: allClothingItems,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.checkroom),
+                    label: const Text('Wardrobe'),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 24),
