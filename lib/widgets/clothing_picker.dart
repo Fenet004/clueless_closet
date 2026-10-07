@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/clothing_item.dart';
 
@@ -39,10 +40,15 @@ class ClothingPicker extends StatelessWidget {
           child: Column(
             children: [
               Expanded(
-                child: Image.asset(
-                  item.imagePath,
-                  fit: BoxFit.contain,
-                ),
+                child: item.isAssetImage
+                    ? Image.asset(
+                        item.imagePath,
+                        fit: BoxFit.contain,
+                      )
+                    : Image.file(
+                        File(item.imagePath),
+                        fit: BoxFit.contain
+                      )
               ),
 
               const SizedBox(height: 8),

@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/clothing_item.dart';
 
 class AddClothingScreen extends StatefulWidget {
@@ -11,7 +13,9 @@ class AddClothingScreen extends StatefulWidget {
 class _AddClothingScreenState extends State<AddClothingScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
-
+  final ImagePicker _imagePicker = ImagePicker();
+  
+  XFile? selectedImage;
   String? selectedCategory;
   String? selectedColor;
 
@@ -39,16 +43,45 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
   }
 
   void saveClothingItem() {
-    if (_formKey.currentState!.validate()) {
-      final newItem = ClothingItem(
-        name: _nameController.text.trim(),
-        category: selectedCategory!,
-        color: selectedColor!,
-        imagePath: 'assets/images/placeholder.png',
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select a clothing image',
+          ),
+        ),
       );
 
-      Navigator.pop(context, newItem);
+      return;
     }
+    
+    final newItem = ClothingItem(
+      name: _nameController.text.trim(),
+      category: selectedCategory!,
+      color: selectedColor!,
+      imagePath: selectedImage!.path,
+      isAssetImage: false,
+    );
+
+    Navigator.pop(context, newItem);
+  }
+
+  Future<void> pickImage() async {
+    final XFile? image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      selectedImage = image;
+    });
   }
 
   @override
@@ -63,6 +96,41 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
           key: _formKey,
           child: Column(
             children: [
+              GestureDetector(
+                onTap: pickImage,
+                child: Container(
+                  width: double.infinity,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    border: Border.all(),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: selectedImage == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              size: 50
+                            ),
+                            SizedBox(height: 12),
+                            Text(
+                              'Tap to choose clothing photo'
+                            ),
+                          ],
+                        )
+                      : ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.file(
+                          File(selectedImage!.path),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
