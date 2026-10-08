@@ -70,18 +70,68 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
     Navigator.pop(context, newItem);
   }
 
-  Future<void> pickImage() async {
-    final XFile? image = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-    );
+  Future<void> pickImage(ImageSource source) async {
+    try{
+      final XFile? image = await _imagePicker.pickImage(
+        source: source,
+        maxWidth: 1200,
+        imageQuality: 85,
+        preferredCameraDevice: CameraDevice.rear,
+      );
 
-    if (image == null) {
-      return;
+      if (image == null) {
+        return;
+      }
+
+      setState(() {
+        selectedImage = image;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not access the image. Please try again.',
+          ),
+        ),
+      );
     }
+    
+  }
 
-    setState(() {
-      selectedImage = image;
-    });
+  void showImageSourceOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library),
+                title: const Text('Choose From Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+
+                  pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -97,12 +147,14 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
           child: Column(
             children: [
               GestureDetector(
-                onTap: pickImage,
+                onTap: showImageSourceOptions,
                 child: Container(
                   width: double.infinity,
                   height: 220,
                   decoration: BoxDecoration(
-                    border: Border.all(),
+                    border: Border.all(
+                      color: Colors.grey,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: selectedImage == null
@@ -110,22 +162,44 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.add_photo_alternate_outlined,
-                              size: 50
+                              Icons.add_a_photo_outlined,
+                              size: 52
                             ),
                             SizedBox(height: 12),
                             Text(
-                              'Tap to choose clothing photo'
+                              'Add clothing photo',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              'Take a photo or choose from gallery',
                             ),
                           ],
                         )
-                      : ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Image.file(
-                          File(selectedImage!.path),
-                          fit: BoxFit.cover,
+                      : Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Image.file(
+                                File(selectedImage!.path),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: CircleAvatar(
+                                child: Icon(
+                                  Icons.edit,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
                 ),
               ),
 
