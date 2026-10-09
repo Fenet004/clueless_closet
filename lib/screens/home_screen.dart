@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/clothing_item.dart';
+import '../services/database_service.dart';
 import '../widgets/clothing_picker.dart';
 import 'add_clothing_screen.dart';
 import 'wardrobe_screen.dart';
@@ -12,62 +13,29 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<ClothingItem> wardrobe = [
-    ClothingItem(
-      name: 'White T-Shirt',
-      category: 'Top',
-      color: 'White',
-      imagePath: 'assets/images/white_tshirt.png',
-    ),
-    ClothingItem(
-      name: 'Black Hoodie',
-      category: 'Top',
-      color: 'Black',
-      imagePath: 'assets/images/black_hoodie.png',
-    ),
-    ClothingItem(
-      name: 'Blue Shirt',
-      category: 'Top',
-      color: 'Blue',
-      imagePath: 'assets/images/blue_shirt.png',
-    ),
-    ClothingItem(
-      name: 'Blue Jeans',
-      category: 'Bottom',
-      color: 'Blue',
-      imagePath: 'assets/images/blue_jeans.png',
-    ),
-    ClothingItem(
-      name: 'Black Pants',
-      category: 'Bottom',
-      color: 'Black',
-      imagePath: 'assets/images/black_pants.png',
-    ),
-    ClothingItem(
-      name: 'Khaki Pants',
-      category: 'Bottom',
-      color: 'Khaki',
-      imagePath: 'assets/images/khaki_pants.png',
-    ),
-    ClothingItem(
-      name: 'White Sneakers',
-      category: 'Shoes',
-      color: 'White',
-      imagePath: 'assets/images/white_sneakers.png',
-    ),
-    ClothingItem(
-      name: 'Black Boots',
-      category: 'Shoes',
-      color: 'Black',
-      imagePath: 'assets/images/black_boots.png',
-    ),
-    ClothingItem(
-      name: 'Running Shoes',
-      category: 'Shoes',
-      color: 'Gray',
-      imagePath: 'assets/images/running_shoes.png',
-    ),
-  ];
+  final DatabaseService _databaseService = DatabaseService.instance;
+  List<ClothingItem> wardrobe = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    loadWardrobe();
+  }
+
+  Future<void> loadWardrobe() async {
+    final items = await _databaseService.getAllClothing();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      wardrobe = items;
+      isLoading = false;
+    });
+  }
   
   List<ClothingItem> get tops {
     return wardrobe
@@ -153,8 +121,14 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    final savedItem = await _databaseService.insertClothing(newItem);
+
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
-      wardrobe.add(newItem);
+      wardrobe.add(savedItem);
     });
   }
 
@@ -174,6 +148,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     fixSelectedIndexes();
     ClothingItem currentTop = tops[currentTopIndex];
     ClothingItem currentBottom = bottoms[currentBottomIndex];

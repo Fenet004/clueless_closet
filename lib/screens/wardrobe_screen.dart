@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/clothing_item.dart';
+import '../services/database_service.dart';
 import 'clothing_details_screen.dart';
 
 class WardrobeScreen extends StatefulWidget {
@@ -16,6 +17,8 @@ class WardrobeScreen extends StatefulWidget {
 }
 
 class _WardrobeScreenState extends State<WardrobeScreen> {
+  final DatabaseService _databaseService = DatabaseService.instance;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,13 +55,29 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   return;
                 }
 
-                setState(() {
-                  if (result == 'delete') {
-                    widget.clothingItems.remove(item);
-                  } else if (result is ClothingItem) {
-                    widget.clothingItems[index] = result;
+                if (result == 'delete') {
+                  if (item.id != null) {
+                    await _databaseService.deleteClothing(item.id!);
                   }
-                });
+
+                  if (!mounted) {
+                    return;
+                  }
+
+                  setState(() {
+                    widget.clothingItems.remove(item);
+                  });
+                } else if (result is ClothingItem) {
+                  await _databaseService.updateClothing(result);
+
+                  if (!mounted) {
+                    return;
+                  }
+
+                  setState(() {
+                    widget.clothingItems[index] = result;
+                  });
+                }
               },
               child: Container(
                 padding: const EdgeInsets.all(12),

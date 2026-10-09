@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/clothing_item.dart';
+import '../services/image_storage_service.dart';
 
 class AddClothingScreen extends StatefulWidget {
   const AddClothingScreen({super.key});
@@ -14,6 +15,7 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final ImagePicker _imagePicker = ImagePicker();
+  final ImageStorageService _imageStorageService = ImageStorageService();
   
   XFile? selectedImage;
   String? selectedCategory;
@@ -42,7 +44,7 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
     super.dispose;
   }
 
-  void saveClothingItem() {
+  Future<void> saveClothingItem() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -58,14 +60,22 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
 
       return;
     }
+
+    final permanentImagePath = await _imageStorageService.saveImage(
+      selectedImage!.path,
+    );
     
     final newItem = ClothingItem(
       name: _nameController.text.trim(),
       category: selectedCategory!,
       color: selectedColor!,
-      imagePath: selectedImage!.path,
+      imagePath: permanentImagePath,
       isAssetImage: false,
     );
+
+    if (!mounted) {
+      return;
+    }
 
     Navigator.pop(context, newItem);
   }
