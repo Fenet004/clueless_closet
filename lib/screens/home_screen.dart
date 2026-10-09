@@ -12,7 +12,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<ClothingItem> tops = [
+  final List<ClothingItem> wardrobe = [
     ClothingItem(
       name: 'White T-Shirt',
       category: 'Top',
@@ -31,9 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
       color: 'Blue',
       imagePath: 'assets/images/blue_shirt.png',
     ),
-  ];
-
-  final List<ClothingItem> bottoms = [
     ClothingItem(
       name: 'Blue Jeans',
       category: 'Bottom',
@@ -52,9 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
       color: 'Khaki',
       imagePath: 'assets/images/khaki_pants.png',
     ),
-  ];
-
-  final List<ClothingItem> shoes = [
     ClothingItem(
       name: 'White Sneakers',
       category: 'Shoes',
@@ -74,13 +68,23 @@ class _HomeScreenState extends State<HomeScreen> {
       imagePath: 'assets/images/running_shoes.png',
     ),
   ];
+  
+  List<ClothingItem> get tops {
+    return wardrobe
+        .where((item) => item.category == 'Top')
+        .toList();
+  }
 
-  List<ClothingItem> get allClothingItems {
-    return [
-      ...tops,
-      ...bottoms,
-      ...shoes,
-    ];
+  List<ClothingItem> get bottoms {
+    return wardrobe
+        .where((item) => item.category == 'Bottom')
+        .toList();
+  }
+
+  List<ClothingItem> get shoes {
+    return wardrobe 
+        .where((item) => item.category == 'Shoes')
+        .toList();
   }
 
   int currentTopIndex = 0;
@@ -150,18 +154,27 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     setState(() {
-      if (newItem.category == 'Top') {
-        tops.add(newItem);
-      } else if (newItem.category == 'Bottom') {
-        bottoms.add(newItem);
-      } else if (newItem.category == 'Shoes') {
-        shoes.add(newItem);
-      }
+      wardrobe.add(newItem);
     });
+  }
+
+  void fixSelectedIndexes() {
+    if (tops.isNotEmpty && currentTopIndex >= tops.length) {
+      currentTopIndex = tops.length - 1;
+    }
+
+    if (bottoms.isNotEmpty && currentBottomIndex >= bottoms.length) {
+      currentBottomIndex = bottoms.length - 1;
+    }
+
+    if (shoes.isNotEmpty && currentShoeIndex >= shoes.length) {
+      currentShoeIndex = shoes.length - 1;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    fixSelectedIndexes();
     ClothingItem currentTop = tops[currentTopIndex];
     ClothingItem currentBottom = bottoms[currentBottomIndex];
     ClothingItem currentShoe = shoes[currentShoeIndex];
@@ -204,17 +217,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 8),
 
                   TextButton.icon(
-                    onPressed: () {
-                      Navigator.push(
+                    onPressed: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) {
                             return WardrobeScreen(
-                              clothingItems: allClothingItems,
+                              clothingItems: wardrobe,
                             );
                           },
                         ),
                       );
+
+                      setState(() {});
                     },
                     icon: const Icon(Icons.checkroom),
                     label: const Text('Wardrobe'),
