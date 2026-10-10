@@ -20,6 +20,9 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
   XFile? selectedImage;
   String? selectedCategory;
   String? selectedColor;
+  String? selectedStyle;
+  String? selectedOccasion;
+  String? selectedSeason;
 
   final List<String> categories = [
     'Top',
@@ -36,6 +39,30 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
     'Gray',
     'Brown',
     'Khaki',
+  ];
+
+  final List<String> styles = [
+    'Casual',
+    'Formal',
+    'Sport',
+    'Streetwear',
+  ];
+
+  final List<String> occasions = [
+    'Everyday',
+    'Work',
+    'Party',
+    'Date',
+    'Gym',
+    'Formal',
+  ];
+
+  final List<String> seasons = [
+    'All',
+    'Summer', 
+    'Winter',
+    'Spring',
+    'Fall',
   ];
 
   @override
@@ -71,6 +98,9 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
       color: selectedColor!,
       imagePath: permanentImagePath,
       isAssetImage: false,
+      style: selectedStyle!,
+      occasion: selectedOccasion!,
+      season: selectedSeason!,
     );
 
     if (!mounted) {
@@ -281,6 +311,90 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
                 validator: (value) {
                   if (value == null) {
                     return 'Please select a color';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              DropdownButtonFormField<String>(
+                initialValue: selectedStyle,
+                decoration: const InputDecoration(
+                  labelText: 'Style',
+                  border: OutlineInputBorder(),
+                ),
+                items: styles.map((style) {
+                  return DropdownMenuItem(
+                    value: style,
+                    child: Text(style),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedStyle = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a style';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              DropdownButtonFormField<String>(
+                initialValue: selectedOccasion,
+                decoration: const InputDecoration(
+                  labelText: 'Occasion',
+                  border: OutlineInputBorder(),
+                ),
+                items: occasions.map((occasion) {
+                  return DropdownMenuItem(
+                    value: occasion,
+                    child: Text(occasion),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedOccasion = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select an occasion';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              DropdownButtonFormField<String>(
+                initialValue: selectedSeason,
+                decoration: const InputDecoration(
+                  labelText: 'Season',
+                  border: OutlineInputBorder(),
+                ),
+                items: seasons.map((season) {
+                  return DropdownMenuItem(
+                    value: season,
+                    child: Text(season),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedSeason = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a season';
                   }
 
                   return null;

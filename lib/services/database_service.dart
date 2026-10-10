@@ -27,8 +27,9 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDatabase,
+      onUpgrade: _upgradeDatabase,
     );
   }
 
@@ -44,10 +45,45 @@ class DatabaseService {
         category TEXT NOT NULL,
         color TEXT NOT NULL,
         imagePath TEXT NOT NULL,
-        isAssetImage INTEGER NOT NULL
+        isAssetImage INTEGER NOT NULL,
+        style TEXT NOT NULL,
+        occasion TEXT NOT NULL,
+        season TEXT NOT NULL
       )
       ''',
     );
+  }
+
+  Future<void> _upgradeDatabase(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        ''' 
+          ALTER TABLE clothing
+          ADD COLUMN style TEXT NOT NULL
+          DEFAULT 'Casual'
+        ''',
+      );
+
+      await db.execute(
+        ''' 
+          ALTER TABLE clothing
+          ADD COLUMN occasion TEXT NOT NULL
+          DEFAULT 'Everyday'
+        ''',
+      );
+
+      await db.execute(
+        '''  
+          ALTER TABLE clothing
+          ADD COLUMN season TEXT NOT NULL
+          DEFAULT 'All'
+        ''',
+      );
+    }
   }
 
   Future<ClothingItem> insertClothing(ClothingItem item) async {

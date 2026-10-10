@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/clothing_item.dart';
+import '../models/outfit.dart';
 import '../services/database_service.dart';
+import '../services/outfit_service.dart';
 import '../widgets/clothing_picker.dart';
 import 'add_clothing_screen.dart';
 import 'wardrobe_screen.dart';
@@ -14,8 +16,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseService _databaseService = DatabaseService.instance;
+  final OutfitService _outfitService = OutfitService();
   List<ClothingItem> wardrobe = [];
   bool isLoading = true;
+
+  Outfit? selectedOutfit;
 
   @override
   void initState() {
@@ -144,6 +149,34 @@ class _HomeScreenState extends State<HomeScreen> {
     if (shoes.isNotEmpty && currentShoeIndex >= shoes.length) {
       currentShoeIndex = shoes.length - 1;
     }
+  }
+
+  void pickOutfit() {
+    final outfit = _outfitService.generateOutfit(
+      tops: tops,
+      bottoms: bottoms,
+      shoes: shoes,
+    );
+
+    if (outfit == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Add atleast one top, bottom and a pair of shoes first.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    setState(() {
+      selectedOutfit = outfit;
+
+      currentTopIndex = tops.indexOf(outfit.top);
+      currentBottomIndex = bottoms.indexOf(outfit.bottom);
+      currentShoeIndex = shoes.indexOf(outfit.shoes);
+    });
   }
 
   @override
@@ -279,12 +312,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
+              if (selectedOutfit != null)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: 16
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${selectedOutfit!.score}% MATCH',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    print('Outfit: ${currentTop.name}, ${currentBottom.name}, ${currentShoe.name}');
-                  },
+                  onPressed: pickOutfit,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       vertical: 18,
