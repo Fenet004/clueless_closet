@@ -19,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final OutfitService _outfitService = OutfitService();
   List<ClothingItem> wardrobe = [];
   bool isLoading = true;
+  bool isPickingOutfit = false;
 
   Outfit? selectedOutfit;
 
@@ -151,7 +152,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void pickOutfit() {
+  void pickOutfit() async {
+    if (isPickingOutfit) {
+      return;
+    }
+
     final outfit = _outfitService.generateOutfit(
       tops: tops,
       bottoms: bottoms,
@@ -171,11 +176,39 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     setState(() {
-      selectedOutfit = outfit;
+      isPickingOutfit = true;
+      selectedOutfit = null;
+    });
 
+    for (int i=0; i < 14; i++) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        currentTopIndex = (currentTopIndex + 1) % tops.length;
+        currentBottomIndex = (currentBottomIndex + 1) % bottoms.length;
+        currentShoeIndex = (currentShoeIndex + 1) % shoes.length;
+      });
+
+      await Future.delayed(
+        Duration(
+          milliseconds: 70 + (i * 15),
+        ),
+      );
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
       currentTopIndex = tops.indexOf(outfit.top);
       currentBottomIndex = bottoms.indexOf(outfit.bottom);
       currentShoeIndex = shoes.indexOf(outfit.shoes);
+
+      selectedOutfit = outfit;
+      isPickingOutfit = false;
     });
   }
 
