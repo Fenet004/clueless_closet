@@ -6,12 +6,14 @@ class ClothingPicker extends StatelessWidget {
   final ClothingItem item;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
+  final bool enabled;
 
   const ClothingPicker({
     super.key,
     required this.item,
     required this.onPrevious,
     required this.onNext,
+    this.enabled = true,
   });
 
   @override
@@ -20,7 +22,9 @@ class ClothingPicker extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         IconButton(
-          onPressed: onPrevious,
+          onPressed: enabled
+              ? onPrevious
+              : null,
           icon: const Icon(
             Icons.chevron_left,
             size: 40,
@@ -40,25 +44,39 @@ class ClothingPicker extends StatelessWidget {
           child: Column(
             children: [
               Expanded(
-                child: item.isAssetImage
-                    ? Image.asset(
-                        item.imagePath,
-                        fit: BoxFit.contain,
-                      )
-                    : Image.file(
-                        File(item.imagePath),
-                        fit: BoxFit.contain
-                      )
+                child: AnimatedSwitcher(
+                  duration: const Duration(
+                    milliseconds: 180,
+                  ),
+                  child: item.isAssetImage
+                      ? Image.asset(
+                          item.imagePath,
+                          key: ValueKey(item.imagePath),
+                          fit: BoxFit.contain,
+                        )
+                      : Image.file(
+                          File(item.imagePath),
+                          key: ValueKey(item.imagePath),
+                          fit: BoxFit.contain,
+                        ),
+                )
+                
               ),
 
               const SizedBox(height: 8),
 
-              Text(
-                item.name,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              AnimatedSwitcher(
+                duration: const Duration(
+                  milliseconds: 180,
+                ),
+                child: Text(
+                  item.name,
+                  key: ValueKey(item.name),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
 
@@ -75,7 +93,9 @@ class ClothingPicker extends StatelessWidget {
         ),
 
         IconButton(
-          onPressed: onNext,
+          onPressed: enabled
+              ? onNext
+              : null,
           icon: const Icon(
             Icons.chevron_right,
             size: 40,

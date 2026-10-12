@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<ClothingItem> wardrobe = [];
   bool isLoading = true;
   bool isPickingOutfit = false;
+  bool showMatchResult = false;
 
   Outfit? selectedOutfit;
 
@@ -178,22 +179,29 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       isPickingOutfit = true;
       selectedOutfit = null;
+      showMatchResult = false;
     });
 
-    for (int i=0; i < 14; i++) {
+    for (int i=0; i < 16; i++) {
       if (!mounted) {
         return;
       }
 
       setState(() {
         currentTopIndex = (currentTopIndex + 1) % tops.length;
-        currentBottomIndex = (currentBottomIndex + 1) % bottoms.length;
-        currentShoeIndex = (currentShoeIndex + 1) % shoes.length;
+
+        if (i % 2 == 0) {
+          currentBottomIndex = (currentBottomIndex + 1) % bottoms.length;
+        }
+        
+        if (i % 3 == 0) {
+          currentShoeIndex = (currentShoeIndex + 1) % shoes.length;
+        }
       });
 
       await Future.delayed(
         Duration(
-          milliseconds: 70 + (i * 15),
+          milliseconds: 60 + (i * 14),
         ),
       );
     }
@@ -209,7 +217,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
       selectedOutfit = outfit;
       isPickingOutfit = false;
+      showMatchResult = true;
     });
+  }
+
+  String getMatchMessage(int score) {
+    if (score >= 90) {
+      return 'Perfect match!';
+    }
+
+    if (score >= 75) {
+      return 'Great combination!';
+    }
+
+    if (score >= 60) {
+      return 'Looking good!';
+    }
+
+    return 'Try another combination';
   }
 
   @override
@@ -303,6 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         item: currentTop,
                         onPrevious: previousTop,
                         onNext: nextTop,
+                        enabled: !isPickingOutfit,
                       ),
 
                       const SizedBox(height:24),
@@ -320,6 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         item: currentBottom,
                         onPrevious: previousBottom,
                         onNext: nextBottom,
+                        enabled: !isPickingOutfit,
                       ),
 
                       const SizedBox(height: 24),
@@ -337,6 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         item: currentShoe,
                         onPrevious: previousShoe,
                         onNext: nextShoe,
+                        enabled: !isPickingOutfit,
                       ),
 
                       const SizedBox(height: 24),
@@ -346,36 +374,60 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               if (selectedOutfit != null)
-                Padding(
-                  padding: const EdgeInsets.only(
-                    bottom: 16
+                AnimatedOpacity(
+                  duration: const Duration(
+                    milliseconds: 500,
                   ),
-                  child: Center(
-                    child: Text(
-                      '${selectedOutfit!.score}% MATCH',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  opacity: showMatchResult ? 1 : 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: 16,
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${selectedOutfit!.score}% MATCH',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          getMatchMessage(
+                            selectedOutfit!.score,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: pickOutfit,
+                  onPressed: isPickingOutfit
+                      ? null
+                      : pickOutfit,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       vertical: 18,
                     ),
                   ),
-                  child: const Text(
-                    'PICK MY OUTFIT',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: isPickingOutfit
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'PICK MY OUTFIT',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ],
