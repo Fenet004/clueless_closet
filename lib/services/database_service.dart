@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/clothing_item.dart';
+import '../models/saved_outfit.dart';
 
 class DatabaseService {
   DatabaseService._();
@@ -27,7 +28,12 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 2,
+      version: 3,
+      onConfigure: (db) async {
+        await db.execute(
+          'PRAGMA foreign_keys = ON',
+        );
+      },
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -51,6 +57,30 @@ class DatabaseService {
         season TEXT NOT NULL
       )
       ''',
+    );
+
+    await db.execute(
+      '''
+      CREATE TABLE favorite_outfits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topId INTEGER NOT NULL,
+        bottomId INTEGER NOT NULL,
+        shoeId INTEGER NOT NULL,
+        score INTEGER NOT NULL
+
+        FOREIGN KEY (topId)
+          REFERENCES clothing(id)
+          ON DELETE CASCADE,
+
+        FOREIGN KEY (bottomId)
+          REFERENCES clothing(id)
+          ON DELETE CASCADE
+        
+        FOREIGN KEY (shoeId)
+          REFERENCES clothing(id)
+          ON DELETE CASCADE
+      )
+      '''
     );
   }
 
@@ -82,6 +112,20 @@ class DatabaseService {
           ADD COLUMN season TEXT NOT NULL
           DEFAULT 'All'
         ''',
+      );
+    }
+
+    if (oldVersion < 3) {
+      await db.execute(
+        '''
+        CREATE TABLE favorite_outfits (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          topId INTEGER NOT NULL,
+          bottomId INTEGER NOT NULL,
+          shoeId INTEGER NOT NULL,
+          score INTEGER NOT NULL
+        )
+        '''
       );
     }
   }
@@ -131,5 +175,54 @@ class DatabaseService {
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<SavedOutfit> insertFavoriteOutfit(SavedOutfit outfit) async {
+    final db = await database;
+
+    final map = outfit.toMap();
+    map.remove('id');
+
+    final id = await db.insert('favorite_outfits', map);
+
+    return outfit.copyWith(id: id);
+  }
+
+  Future<List<SavedOutfit>> getFavoriteOutfits() async {
+    final db = await database;
+
+    final maps = await db.query(
+      'favorite_outfits',
+      orderBy: 'id DESC',
+    );
+
+    return maps
+        .map(
+          (map) => SavedOutfit.fromMap(map),
+        )
+        .toList();
+  }
+
+  Future<void> deleteFavoriteOutfit(int id) async {
+    final db = await database;
+
+    await db.delete(
+      'favorite_outfits',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  Future<bool> isFavoriteOutfit(int topId, int bottomId, int shoeId) async {
+    final db = await database;
+
+    final result = await db.query(
+      'favorite_outfits',
+      where: 'topId = ? AND bottomId = ? AND shoeId = ?',
+      whereArgs: [topId, bottomId, shoeId],
+      limit: 1,
+    );
+
+    return result.isNotEmpty;
   }
 }

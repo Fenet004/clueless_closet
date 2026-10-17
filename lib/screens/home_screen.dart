@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
+import '../models/saved_outfit.dart';
 import '../services/database_service.dart';
 import '../services/outfit_service.dart';
 import '../widgets/clothing_picker.dart';
 import 'add_clothing_screen.dart';
+import 'favorites_screen.dart';
 import 'wardrobe_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -237,6 +239,71 @@ class _HomeScreenState extends State<HomeScreen> {
     return 'Try another combination';
   }
 
+  Future<void> saveFavoriteOutfit() async {
+    final outfit = selectedOutfit;
+
+    if (outfit == null) {
+      return;
+    }
+
+    if (outfit.top.id == null ||
+        outfit.bottom.id == null ||
+        outfit.shoes.id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This outfit cannot be saved yet.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    final alreadySaved = await _databaseService.isFavoriteOutfit(
+      outfit.top.id!,
+      outfit.bottom.id!,
+      outfit.shoes.id!,
+    );
+
+    if (alreadySaved) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This outfit is already in your favorites.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    final savedOutfit = SavedOutfit(
+      topId: outfit.top.id!,
+      bottomId: outfit.bottom.id!,
+      shoeId: outfit.shoes.id!,
+      score: outfit.score,
+    );
+
+    await _databaseService.insertFavoriteOutfit(savedOutfit);
+
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Outfit saved to favorites',
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -305,6 +372,25 @@ class _HomeScreenState extends State<HomeScreen> {
                     },
                     icon: const Icon(Icons.checkroom),
                     label: const Text('Wardrobe'),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return FavoritesScreen(
+                              wardrobe: wardrobe,
+                            );
+                          },
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.favorite),
+                    label: const Text('Favorites'),
                   ),
                 ],
               ),
@@ -385,12 +471,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Column(
                       children: [
-                        Text(
-                          '${selectedOutfit!.score}% MATCH',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '${selectedOutfit!.score}% MATCH',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            IconButton(
+                              onPressed: saveFavoriteOutfit,
+                              icon: const Icon(
+                                Icons.favorite_border,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
