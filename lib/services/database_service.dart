@@ -28,7 +28,7 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onConfigure: (db) async {
         await db.execute(
           'PRAGMA foreign_keys = ON',
@@ -72,6 +72,31 @@ class DatabaseService {
           REFERENCES clothing(id)
           ON DELETE CASCADE,
 
+        FOREIGN KEY (bottomId)
+          REFERENCES clothing(id)
+          ON DELETE CASCADE
+        
+        FOREIGN KEY (shoeId)
+          REFERENCES clothing(id)
+          ON DELETE CASCADE
+      )
+      '''
+    );
+
+    await db.execute(
+      '''
+      CREATE TABLE outfit_history(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        topId INTEGER NOT NULL,
+        bottomId INTEGER NOT NULL,
+        shoeId INTEGER NOT NULL,
+        score INTEGER NOT NULL,
+        wornAt TEXT NOT NULL,
+
+        FOREIGN KEY (topId)
+          REFERENCES clothing(id)
+          ON DELETE CASCADE,
+        
         FOREIGN KEY (bottomId)
           REFERENCES clothing(id)
           ON DELETE CASCADE
