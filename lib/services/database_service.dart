@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/clothing_item.dart';
+import '../models/outfit_history.dart';
 import '../models/saved_outfit.dart';
 
 class DatabaseService {
@@ -153,6 +154,33 @@ class DatabaseService {
         '''
       );
     }
+
+    if (oldVersion < 4) {
+      await db.execute(
+        '''
+        CREATE TABLE outfit_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          topId INTEGER NOT NULL,
+          bottomId INTEGER NOT NULL,
+          shoeId INTEGER NOT NULL,
+          score INTEGER NOT NULL,
+          wornAt TEXT NOT NULL,
+
+          FOREIGN KEY (topId)
+            REFERENCES clothing(id)
+            ON DELETE CASCADE,
+
+          FOREIGN KEY (bottomId)
+            REFERENCES clothing(id)
+            ON DELETE CASCADE,
+
+          FOREIGN KEY (shoeId)
+            REFERENCES clothing(id)
+            ON DELETE CASCADE
+        )
+        ''',
+      );
+    }
   }
 
   Future<ClothingItem> insertClothing(ClothingItem item) async {
@@ -249,5 +277,44 @@ class DatabaseService {
     );
 
     return result.isNotEmpty;
+  }
+
+  Future<OutfitHistory> insertOutfitHistory(OutfitHistory history) async {
+    final db = await database;
+
+    final map = history.toMap();
+    map.remove('id');
+
+    final id = await db.insert(
+      'outfit_history',
+      map,
+    );
+
+    return history.copyWith(id: id);
+  }
+
+  Future<List<OutfitHistory>> getOutfitHistory() async {
+    final db = await database;
+
+    final maps = await db.query(
+      'outfit_history',
+      orderBy: 'wornAt DESC',
+    );
+
+    return maps
+        .map(
+          (map) => OutfitHistory.fromMap(map),
+        )
+        .toList();
+  }
+
+  Future<void> deleteOutfitHistory(int id) async {
+    final db = await database;
+
+    await db.delete(
+      'outfit_history',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }
