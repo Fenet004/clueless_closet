@@ -39,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Outfit? selectedOutfit;
 
+  List<OutfitHistory> outfitHistory = [];
+
   @override
   void initState() {
     super.initState();
@@ -49,12 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> loadWardrobe() async {
     final items = await _databaseService.getAllClothing();
 
+    final history = await _databaseService.getOutfitHistory();
+
     if (!mounted) {
       return;
     }
 
     setState(() {
       wardrobe = items;
+      outfitHistory = history;
       isLoading = false;
     });
   }
@@ -178,6 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottoms: bottoms,
       shoes: shoes,
       occasion: selectedOccasion,
+      history: outfitHistory,
     );
 
     if (outfit == null) {
@@ -346,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
       wornAt: DateTime.now(),
     );
 
-    await _databaseService.insertOutfitHistory(history);
+    final savedHistory = await _databaseService.insertOutfitHistory(history);
 
     if (!mounted) {
       return;
@@ -361,6 +367,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     setState(() {
+      outfitHistory.insert(0, savedHistory);
       outfitMarkedAsWorn = true;
     });
   }

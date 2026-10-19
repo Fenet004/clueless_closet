@@ -1,42 +1,48 @@
-import 'dart:math';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
+import '../models/outfit_history.dart';
 
 class OutfitService {
-  final Random _random = Random();
 
   Outfit? generateOutfit({
     required List<ClothingItem> tops,
     required List<ClothingItem> bottoms,
     required List<ClothingItem> shoes,
     required String occasion,
+    required List<OutfitHistory> history,
   }) {
     final matchingTops = _filterByOccasion(tops, occasion);
     final matchingBottoms = _filterByOccasion(bottoms, occasion);
     final matchingShoes = _filterByOccasion(shoes, occasion);
-    
+
     if (matchingTops.isEmpty || matchingBottoms.isEmpty || matchingShoes.isEmpty) {
       return null;
     }
 
     Outfit? bestOutfit;
 
-    for (int i = 0; i < 20; i++) {
-      final top = matchingTops[_random.nextInt(matchingTops.length)];
-      final bottom = matchingBottoms[_random.nextInt(matchingBottoms.length)];
-      final shoe = matchingShoes[_random.nextInt(matchingShoes.length)];
+    for (final top in matchingTops) {
+      for (final bottom in matchingBottoms) {
+        for (final shoe in matchingShoes) {
+          final score = calculateScore(
+            top, 
+            bottom,
+            shoe,
+            occasion,
+            history,
+          );
 
-      final score = calculateScore(top, bottom, shoe, occasion);
+          final outfit = Outfit(
+            top: top,
+            bottom: bottom,
+            shoes: shoe,
+            score: score,
+          );
 
-      final outfit = Outfit(
-        top: top,
-        bottom: bottom,
-        shoes: shoe,
-        score: score,
-      );
-
-      if (bestOutfit == null || outfit.score > bestOutfit.score) {
-        bestOutfit = outfit;
+          if (bestOutfit == null || outfit.score > bestOutfit.score) {
+            bestOutfit = outfit;
+          }
+        }
       }
     }
 
@@ -48,6 +54,7 @@ class OutfitService {
     ClothingItem bottom,
     ClothingItem shoes,
     String occasion,
+    List<OutfitHistory> history,
   ) {
     int score = 25;
 
@@ -79,6 +86,8 @@ class OutfitService {
     score += _occasionCompatibility(bottom.occasion, occasion);
 
     score += _occasionCompatibility(shoes.occasion, occasion);
+
+    score -= _recentWearPenalty(top, bottom, shoes, history);
 
     return score.clamp(0, 100);
   }
@@ -164,5 +173,76 @@ class OutfitService {
     }
 
     return 0;
+  }
+
+  int _recentWearPenalty(
+    ClothingItem top,
+    ClothingItem bottom,
+    ClothingItem shoes,
+    List<OutfitHistory> history,
+  ) {
+    if (top.id == null || bottom.id == null || shoes.id == null) {
+      return 0;
+    }
+
+    int penalty = 0;
+
+    final now = DateTime.now();
+
+    for (final item in history) {
+      final daysAgo = _daysBetween(now, item.wornAt);
+
+      if (daysAgo > 7) {
+        continue;
+      }
+
+      final sameTop = item.topId == top.id;
+      final sameBottom = item.bottomId == bottom.id;
+      final sameShoes = item.shoeId == shoes.id;
+
+      final exactOutfit = sameTop && sameBottom && sameShoes;
+
+      if (exactOutfit) {
+        if (daysAgo == 0) {
+          penalty += 50;
+        } else if (daysAgo <= 2) {
+          penalty += 35;
+        } else if (daysAgo <= 7) {
+          penalty += 20;
+        }
+
+        continue;
+      }
+
+      if (sameTop && daysAgo <= 2) {
+        penalty += 6;
+      }
+
+      if (sameBottom && daysAgo <= 2) {
+        penalty += 6;
+      }
+
+      if (sameShoes && daysAgo <= 1) {
+        penalty +=3;
+      }
+    }
+
+    return penalty;
+  }
+
+  int _daysBetween(DateTime first, DateTime second) {
+    final firstDate = DateTime(
+      first.year,
+      first.month,
+      first.day
+    );
+
+    final secondDate = DateTime(
+      second.year,
+      second.month,
+      second.day,
+    );
+
+    return firstDate.difference(secondDate).inDays;
   }
 }
