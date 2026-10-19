@@ -26,6 +26,16 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isPickingOutfit = false;
   bool showMatchResult = false;
   bool outfitMarkedAsWorn = false;
+  String selectedOccasion = 'Everyday';
+
+  final List<String> occasions = [
+    'Everyday',
+    'Work',
+    'Date',
+    'Party',
+    'Gym',
+    'Formal',
+  ];
 
   Outfit? selectedOutfit;
 
@@ -167,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
       tops: tops,
       bottoms: bottoms,
       shoes: shoes,
+      occasion: selectedOccasion,
     );
 
     if (outfit == null) {
@@ -471,6 +482,41 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       const Text(
+                        'Where are you going?',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: occasions.map((occasion) {
+                          return ChoiceChip(
+                            label: Text(occasion),
+                            selected: selectedOccasion == occasion,
+                            onSelected: (selected) {
+                              if (!selected) {
+                                return;
+                              }
+
+                              setState(() {
+                                selectedOccasion = occasion;
+                                selectedOutfit = null;
+                                showMatchResult = false;
+                                outfitMarkedAsWorn = false;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      const Text(
                         'TOP',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -540,6 +586,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: Column(
                       children: [
+                        Text(
+                          selectedOccasion,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

@@ -9,19 +9,24 @@ class OutfitService {
     required List<ClothingItem> tops,
     required List<ClothingItem> bottoms,
     required List<ClothingItem> shoes,
+    required String occasion,
   }) {
-    if (tops.isEmpty || bottoms.isEmpty || shoes.isEmpty) {
+    final matchingTops = _filterByOccasion(tops, occasion);
+    final matchingBottoms = _filterByOccasion(bottoms, occasion);
+    final matchingShoes = _filterByOccasion(shoes, occasion);
+    
+    if (matchingTops.isEmpty || matchingBottoms.isEmpty || matchingShoes.isEmpty) {
       return null;
     }
 
     Outfit? bestOutfit;
 
     for (int i = 0; i < 20; i++) {
-      final top = tops[_random.nextInt(tops.length)];
-      final bottom = bottoms[_random.nextInt(bottoms.length)];
-      final shoe = shoes[_random.nextInt(shoes.length)];
+      final top = matchingTops[_random.nextInt(matchingTops.length)];
+      final bottom = matchingBottoms[_random.nextInt(matchingBottoms.length)];
+      final shoe = matchingShoes[_random.nextInt(matchingShoes.length)];
 
-      final score = calculateScore(top, bottom, shoe);
+      final score = calculateScore(top, bottom, shoe, occasion);
 
       final outfit = Outfit(
         top: top,
@@ -42,8 +47,9 @@ class OutfitService {
     ClothingItem top,
     ClothingItem bottom,
     ClothingItem shoes,
+    String occasion,
   ) {
-    int score = 30;
+    int score = 25;
 
     score += _colorCompatibility(
       top.color,
@@ -61,20 +67,18 @@ class OutfitService {
     );
 
     if (top.style == bottom.style) {
-      score += 10;
+      score += 8;
     }
 
     if (bottom.style == shoes.style) {
-      score += 10;
+      score += 8;
     }
 
-    if (top.occasion == bottom.occasion) {
-      score += 5;
-    }
+    score += _occasionCompatibility(top.occasion, occasion);
 
-    if (bottom.occasion == shoes.occasion) {
-      score += 5;
-    }
+    score += _occasionCompatibility(bottom.occasion, occasion);
+
+    score += _occasionCompatibility(shoes.occasion, occasion);
 
     return score.clamp(0, 100);
   }
@@ -122,5 +126,43 @@ class OutfitService {
     }
 
     return 3;
+  }
+
+  List<ClothingItem> _filterByOccasion(
+    List<ClothingItem> items,
+    String occasion,
+  ) {
+    final matches = items.where((item) {
+      return item.occasion == occasion || item.occasion == 'Everyday';
+    }).toList();
+
+    if (matches.isEmpty) {
+      return items;
+    }
+
+    return matches;
+  }
+
+  int _occasionCompatibility(
+    String itemOccasion,
+    String targetOccasion,
+  ) {
+    if (itemOccasion == targetOccasion) {
+      return 10;
+    }
+
+    if (itemOccasion == 'Everyday') {
+      return 4;
+    }
+
+    if (targetOccasion == 'Formal' && itemOccasion == 'Gym') {
+      return -20;
+    }
+
+    if (targetOccasion == 'Gym' && itemOccasion == 'Formal') {
+      return -20;
+    }
+
+    return 0;
   }
 }
