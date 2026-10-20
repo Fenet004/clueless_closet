@@ -1,6 +1,7 @@
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/outfit_history.dart';
+import '../models/weather_info.dart';
 
 class OutfitService {
 
@@ -11,6 +12,7 @@ class OutfitService {
     required String occasion,
     required String season,
     required List<OutfitHistory> history,
+    WeatherInfo? weather,
   }) {
     final matchingTops = _filterItems(
       items: tops,
@@ -46,6 +48,7 @@ class OutfitService {
             occasion,
             season,
             history,
+            weather,
           );
 
           final outfit = Outfit(
@@ -72,6 +75,7 @@ class OutfitService {
     String occasion,
     String season,
     List<OutfitHistory> history,
+    WeatherInfo? weather,
   ) {
     int score = 25;
 
@@ -111,6 +115,14 @@ class OutfitService {
     score += _seasonCompatibility(shoes.season, season);
 
     score -= _recentWearPenalty(top, bottom, shoes, history);
+
+    if (weather != null) {
+      score += _weatherCompatibility(top, weather);
+
+      score += _weatherCompatibility(bottom, weather);
+
+      score += _weatherCompatibility(shoes, weather);
+    }
 
     return score.clamp(0, 100);
   }
@@ -158,6 +170,51 @@ class OutfitService {
     }
 
     return 3;
+  }
+
+  int _weatherCompatibility(
+    ClothingItem item,
+    WeatherInfo weather,
+  ) {
+    int score = 0;
+
+    switch (weather.temperatureCategory) {
+      case 'Hot':
+        if (item.season == 'Summer') {
+          score += 10;
+        } else if (item.season == 'Winter') {
+          score -= 15;
+        }
+
+        break;
+
+      case 'Warm':
+        if (item.season == 'Summer' || item.season == 'All') {
+          score += 6;
+        }
+
+        break;
+
+      case 'Cool':
+        if (item.season == 'Spring' ||
+            item.season == 'Fall' ||
+            item.season == 'All') {
+          score += 6;
+        }
+
+        break;
+
+      case 'Cold':
+        if (item.season == 'Winter') {
+          score += 12;
+        } else if (item.season == 'Summer') {
+          score -= 15;
+        }
+
+        break;
+    }
+
+    return score;
   }
 
   List<ClothingItem> _filterItems({

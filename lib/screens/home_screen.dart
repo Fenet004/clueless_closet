@@ -3,8 +3,10 @@ import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/outfit_history.dart';
 import '../models/saved_outfit.dart';
+import '../models/weather_info.dart';
 import '../services/database_service.dart';
 import '../services/outfit_service.dart';
+import '../services/weather_service.dart';
 import '../widgets/clothing_picker.dart';
 import 'add_clothing_screen.dart';
 import 'favorites_screen.dart';
@@ -21,6 +23,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final DatabaseService _databaseService = DatabaseService.instance;
   final OutfitService _outfitService = OutfitService();
+  final WeatherService _weatherService = WeatherService();
+  WeatherInfo? weather;
+  bool isWeatherLoading = false;
   List<ClothingItem> wardrobe = [];
   bool isLoading = true;
   bool isPickingOutfit = false;
@@ -53,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
 
     loadWardrobe();
+    loadWeather();
   }
 
   Future<void> loadWardrobe() async {
@@ -192,6 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
       occasion: selectedOccasion,
       season: selectedSeason,
       history: outfitHistory,
+      weather: weather,
     );
 
     if (outfit == null) {
@@ -380,6 +387,44 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> loadWeather() async {
+    setState(() {
+      isWeatherLoading = true;
+    });
+
+    try {
+      final result = await _weatherService.getCurrentWeather(
+        latitude: 9.03,
+        longitude: 38.74,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        weather = result;
+        isWeatherLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isWeatherLoading = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not load weather.',
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -496,6 +541,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
+                      if (isWeatherLoading)
+                        const Center(
+                          child: CircularProgressIndicator(),
+                        )
+                      else if (weather != null)
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.cloud_outlined),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '${weather!.temperature.toStringAsFixed(1)}°C'
+                                    ' • ${weather!.temperatureCategory}'
+                                    '${weather!.isRainy ? ' • Rain' : ''}',
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: isWeatherLoading
+                                      ? null
+                                      : loadWeather,
+                                  icon: const Icon(Icons.refresh),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       const Text(
                         'Where are you going?',
                         style: TextStyle(
