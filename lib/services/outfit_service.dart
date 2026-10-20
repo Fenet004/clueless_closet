@@ -9,11 +9,26 @@ class OutfitService {
     required List<ClothingItem> bottoms,
     required List<ClothingItem> shoes,
     required String occasion,
+    required String season,
     required List<OutfitHistory> history,
   }) {
-    final matchingTops = _filterByOccasion(tops, occasion);
-    final matchingBottoms = _filterByOccasion(bottoms, occasion);
-    final matchingShoes = _filterByOccasion(shoes, occasion);
+    final matchingTops = _filterItems(
+      items: tops,
+      occasion: occasion,
+      season: season,
+    );
+
+    final matchingBottoms = _filterItems(
+      items: bottoms,
+      occasion: occasion,
+      season: season,
+    );
+
+    final matchingShoes = _filterItems(
+      items: shoes,
+      occasion: occasion,
+      season: season,
+    );
 
     if (matchingTops.isEmpty || matchingBottoms.isEmpty || matchingShoes.isEmpty) {
       return null;
@@ -29,6 +44,7 @@ class OutfitService {
             bottom,
             shoe,
             occasion,
+            season,
             history,
           );
 
@@ -54,6 +70,7 @@ class OutfitService {
     ClothingItem bottom,
     ClothingItem shoes,
     String occasion,
+    String season,
     List<OutfitHistory> history,
   ) {
     int score = 25;
@@ -86,6 +103,12 @@ class OutfitService {
     score += _occasionCompatibility(bottom.occasion, occasion);
 
     score += _occasionCompatibility(shoes.occasion, occasion);
+
+    score += _seasonCompatibility(top.season, season);
+
+    score += _seasonCompatibility(bottom.season, season);
+
+    score += _seasonCompatibility(shoes.season, season);
 
     score -= _recentWearPenalty(top, bottom, shoes, history);
 
@@ -137,12 +160,22 @@ class OutfitService {
     return 3;
   }
 
-  List<ClothingItem> _filterByOccasion(
-    List<ClothingItem> items,
-    String occasion,
-  ) {
+  List<ClothingItem> _filterItems({
+    required List<ClothingItem> items,
+    required String occasion,
+    required String season,
+  }) {
     final matches = items.where((item) {
-      return item.occasion == occasion || item.occasion == 'Everyday';
+      final occasionMatches =
+          item.occasion == occasion ||
+          item.occasion == 'Everyday';
+      
+      final seasonMatches = 
+          season == 'All' ||
+          item.season == season ||
+          item.season == 'All';
+      
+      return occasionMatches && seasonMatches;
     }).toList();
 
     if (matches.isEmpty) {
@@ -173,6 +206,33 @@ class OutfitService {
     }
 
     return 0;
+  }
+
+  int _seasonCompatibility(String itemSeason, String targetSeason) {
+    if (targetSeason == 'All') {
+      return 0;
+    }
+
+    if (itemSeason == targetSeason) {
+      return 8;
+    }
+
+    if (itemSeason == 'All') {
+      return 4;
+    }
+
+    final badPairs = {
+      'Winter-Summer',
+      'Summer-Winter',
+    };
+
+    final pair = '$itemSeason-$targetSeason';
+
+    if (badPairs.contains(pair)) {
+      return -15;
+    }
+
+    return -3;
   }
 
   int _recentWearPenalty(

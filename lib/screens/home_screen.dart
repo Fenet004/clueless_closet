@@ -27,6 +27,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool showMatchResult = false;
   bool outfitMarkedAsWorn = false;
   String selectedOccasion = 'Everyday';
+  String selectedSeason = 'All';
+  Outfit? selectedOutfit;
+  List<OutfitHistory> outfitHistory = [];
 
   final List<String> occasions = [
     'Everyday',
@@ -37,9 +40,13 @@ class _HomeScreenState extends State<HomeScreen> {
     'Formal',
   ];
 
-  Outfit? selectedOutfit;
-
-  List<OutfitHistory> outfitHistory = [];
+  final List<String> seasons = [
+    'All',
+    'Summer',
+    'Winter',
+    'Spring',
+    'Fall',
+  ];
 
   @override
   void initState() {
@@ -183,6 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bottoms: bottoms,
       shoes: shoes,
       occasion: selectedOccasion,
+      season: selectedSeason,
       history: outfitHistory,
     );
 
@@ -521,6 +529,41 @@ class _HomeScreenState extends State<HomeScreen> {
                         }).toList(),
                       ),
 
+                      const SizedBox(height: 20),
+
+                      const Text(
+                        'Season',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: seasons.map((season) {
+                          return ChoiceChip(
+                            label: Text(season),
+                            selected: selectedSeason == season,
+                            onSelected: (selected) {
+                              if (!selected) {
+                                return;
+                              }
+
+                              setState(() {
+                                selectedSeason = season;
+                                selectedOutfit = null;
+                                showMatchResult = false;
+                                outfitMarkedAsWorn = false;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+
                       const SizedBox(height: 24),
 
                       const Text(
@@ -594,7 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       children: [
                         Text(
-                          selectedOccasion,
+                          '$selectedOccasion • $selectedSeason',
                           style: const TextStyle(fontSize: 14),
                         ),
                         const SizedBox(height: 16),
