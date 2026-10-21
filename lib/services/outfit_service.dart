@@ -1,9 +1,11 @@
+import 'dart:math';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/outfit_history.dart';
 import '../models/weather_info.dart';
 
 class OutfitService {
+  final Random _random = Random();
 
   Outfit? generateOutfit({
     required List<ClothingItem> tops,
@@ -36,7 +38,7 @@ class OutfitService {
       return null;
     }
 
-    Outfit? bestOutfit;
+    final List<Outfit> candidates = [];
 
     for (final top in matchingTops) {
       for (final bottom in matchingBottoms) {
@@ -58,14 +60,34 @@ class OutfitService {
             score: score,
           );
 
-          if (bestOutfit == null || outfit.score > bestOutfit.score) {
-            bestOutfit = outfit;
-          }
+          candidates.add(outfit);
         }
       }
     }
 
-    return bestOutfit;
+    if (candidates.isEmpty) {
+      return null;
+    }
+
+    candidates.sort(
+      (a, b) => b.score.compareTo(a.score),
+    );
+
+    final bestScore = candidates.first.score;
+
+    final strongCandidates = candidates.where(
+      (outfit) {
+        return outfit.score >= bestScore - 10;
+      },
+    ).toList();
+
+    strongCandidates.shuffle(_random);
+
+    final topCandidates = candidates.take(5).toList();
+
+    final selectedIndex = _random.nextInt(topCandidates.length);
+
+    return topCandidates[selectedIndex];
   }
 
   int calculateScore(
