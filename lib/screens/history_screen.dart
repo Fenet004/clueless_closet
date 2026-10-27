@@ -1,58 +1,23 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../bloc/closet_bloc.dart';
+import '../bloc/closet_event.dart';
+import '../bloc/closet_state.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit_history.dart';
-import '../services/database_service.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends StatelessWidget {
   const HistoryScreen({
     super.key,
   });
 
-  @override
-  State<HistoryScreen> createState() {
-    return _HistoryScreenState();
-  }
-}
-
-class _HistoryScreenState
-    extends State<HistoryScreen> {
-  final DatabaseService _databaseService =
-      DatabaseService.instance;
-
-  List<ClothingItem> wardrobe = [];
-  List<OutfitHistory> history = [];
-
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-
-    loadData();
-  }
-
-  Future<void> loadData() async {
-    final clothing =
-        await _databaseService.getAllClothing();
-
-    final savedHistory =
-        await _databaseService.getOutfitHistory();
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      wardrobe = clothing;
-      history = savedHistory;
-      isLoading = false;
-    });
-  }
-
-  ClothingItem? findClothingById(int id) {
+  ClothingItem? _findClothingById(
+    List<ClothingItem> wardrobe,
+    int id,
+  ) {
     for (final item in wardrobe) {
       if (item.id == id) {
         return item;
@@ -62,57 +27,39 @@ class _HistoryScreenState
     return null;
   }
 
-  Future<void> deleteHistoryItem(
-    OutfitHistory item,
-  ) async {
-    if (item.id == null) {
-      return;
-    }
-
-    await _databaseService.deleteOutfitHistory(
-      item.id!,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      history.remove(item);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Outfit History',
         ),
-        actions: [
-          IconButton(
-            onPressed: loadData,
-            icon: const Icon(
-              Icons.refresh,
-            ),
-          ),
-        ],
       ),
-      body: history.isEmpty
-          ? const Center(
+      body:
+          BlocBuilder<ClosetBloc, ClosetState>(
+        builder: (context, state) {
+          if (state.isLoading) {
+            return const Center(
+              child:
+                  CircularProgressIndicator(),
+            );
+          }
+
+          final wardrobe =
+              state.wardrobe;
+
+          final history =
+              state.history;
+
+          if (history.isEmpty) {
+            return const Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding:
+                    EdgeInsets.all(32),
                 child: Column(
                   mainAxisAlignment:
-                      MainAxisAlignment.center,
+                      MainAxisAlignment
+                          .center,
                   children: [
                     Icon(
                       Icons.history,
@@ -136,52 +83,69 @@ class _HistoryScreenState
                   ],
                 ),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: history.length,
-              itemBuilder: (context, index) {
-                final historyItem =
-                    history[index];
+            );
+          }
 
-                final top = findClothingById(
-                  historyItem.topId,
-                );
+          return ListView.builder(
+            padding:
+                const EdgeInsets.all(16),
+            itemCount: history.length,
+            itemBuilder:
+                (context, index) {
+              final historyItem =
+                  history[index];
 
-                final bottom =
-                    findClothingById(
-                  historyItem.bottomId,
-                );
+              final top =
+                  _findClothingById(
+                wardrobe,
+                historyItem.topId,
+              );
 
-                final shoes =
-                    findClothingById(
-                  historyItem.shoeId,
-                );
+              final bottom =
+                  _findClothingById(
+                wardrobe,
+                historyItem.bottomId,
+              );
 
-                if (top == null ||
-                    bottom == null ||
-                    shoes == null) {
-                  return const SizedBox.shrink();
-                }
+              final shoes =
+                  _findClothingById(
+                wardrobe,
+                historyItem.shoeId,
+              );
 
-                return _HistoryCard(
-                  historyItem: historyItem,
-                  top: top,
-                  bottom: bottom,
-                  shoes: shoes,
-                  onDelete: () {
-                    deleteHistoryItem(
-                      historyItem,
-                    );
-                  },
-                );
-              },
-            ),
+              if (top == null ||
+                  bottom == null ||
+                  shoes == null) {
+                return const SizedBox
+                    .shrink();
+              }
+
+              return _HistoryCard(
+                historyItem:
+                    historyItem,
+                top: top,
+                bottom: bottom,
+                shoes: shoes,
+                onDelete: () {
+                  context
+                      .read<ClosetBloc>()
+                      .add(
+                        HistoryDeleted(
+                          historyItem,
+                        ),
+                      );
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
 
-class _HistoryCard extends StatelessWidget {
+class _HistoryCard
+    extends StatelessWidget {
   final OutfitHistory historyItem;
   final ClothingItem top;
   final ClothingItem bottom;
@@ -232,7 +196,9 @@ class _HistoryCard extends StatelessWidget {
     );
 
     final difference =
-        today.difference(historyDate).inDays;
+        today
+            .difference(historyDate)
+            .inDays;
 
     if (difference == 0) {
       return 'Today';
@@ -248,22 +214,27 @@ class _HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(
+      margin:
+          const EdgeInsets.only(
         bottom: 16,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding:
+            const EdgeInsets.all(16),
         child: Column(
           children: [
             Align(
-              alignment: Alignment.centerLeft,
+              alignment:
+                  Alignment.centerLeft,
               child: Text(
                 _formatDate(
                   historyItem.wornAt,
                 ),
-                style: const TextStyle(
+                style:
+                    const TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight:
+                      FontWeight.bold,
                 ),
               ),
             ),
@@ -271,15 +242,22 @@ class _HistoryCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _buildImage(top),
+                  child:
+                      _buildImage(top),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildImage(bottom),
+                const SizedBox(
+                  width: 8,
                 ),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: _buildImage(shoes),
+                  child:
+                      _buildImage(bottom),
+                ),
+                const SizedBox(
+                  width: 8,
+                ),
+                Expanded(
+                  child:
+                      _buildImage(shoes),
                 ),
               ],
             ),
@@ -288,7 +266,8 @@ class _HistoryCard extends StatelessWidget {
               '${top.name} + '
               '${bottom.name} + '
               '${shoes.name}',
-              textAlign: TextAlign.center,
+              textAlign:
+                  TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(

@@ -1,53 +1,23 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../bloc/closet_bloc.dart';
+import '../bloc/closet_event.dart';
+import '../bloc/closet_state.dart';
 import '../models/clothing_item.dart';
-import '../services/database_service.dart';
 import 'add_clothing_screen.dart';
 import 'clothing_details_screen.dart';
 
-class WardrobeScreen extends StatefulWidget {
+class WardrobeScreen extends StatelessWidget {
   const WardrobeScreen({
     super.key,
   });
 
-  @override
-  State<WardrobeScreen> createState() {
-    return _WardrobeScreenState();
-  }
-}
-
-class _WardrobeScreenState extends State<WardrobeScreen> {
-  final DatabaseService _databaseService =
-      DatabaseService.instance;
-
-  List<ClothingItem> clothingItems = [];
-
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-
-    loadWardrobe();
-  }
-
-  Future<void> loadWardrobe() async {
-    final items =
-        await _databaseService.getAllClothing();
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      clothingItems = items;
-      isLoading = false;
-    });
-  }
-
-  Future<void> addClothing() async {
+  Future<void> _addClothing(
+    BuildContext context,
+  ) async {
     final ClothingItem? newItem =
         await Navigator.push<ClothingItem>(
       context,
@@ -62,23 +32,18 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       return;
     }
 
-    final savedItem =
-        await _databaseService.insertClothing(
-      newItem,
-    );
-
-    if (!mounted) {
+    if (!context.mounted) {
       return;
     }
 
-    setState(() {
-      clothingItems.add(savedItem);
-    });
+    context.read<ClosetBloc>().add(
+          ClothingAdded(newItem),
+        );
   }
 
-  Future<void> openClothingDetails(
+  Future<void> _openClothingDetails(
+    BuildContext context,
     ClothingItem item,
-    int index,
   ) async {
     final result = await Navigator.push(
       context,
@@ -91,45 +56,38 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
       ),
     );
 
+    if (!context.mounted) {
+      return;
+    }
+
     if (result == null) {
       return;
     }
 
     if (result == 'delete') {
-      if (item.id != null) {
-        await _databaseService.deleteClothing(
-          item.id!,
-        );
-      }
+      context.read<ClosetBloc>().add(
+            ClothingDeleted(item),
+          );
 
-      if (!mounted) {
-        return;
-      }
+      return;
+    }
 
-      setState(() {
-        clothingItems.removeAt(index);
-      });
-    } else if (result is ClothingItem) {
-      await _databaseService.updateClothing(
-        result,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      setState(() {
-        clothingItems[index] = result;
-      });
+    if (result is ClothingItem) {
+      context.read<ClosetBloc>().add(
+            ClothingUpdated(result),
+          );
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+    BuildContext context,
+  ) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment:
+              MainAxisAlignment.center,
           children: [
             const Icon(
               Icons.checkroom,
@@ -150,7 +108,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: addClothing,
+              onPressed: () {
+                _addClothing(context);
+              },
               icon: const Icon(
                 Icons.add,
               ),
@@ -164,7 +124,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     );
   }
 
-  Widget _buildWardrobeGrid() {
+  Widget _buildWardrobeGrid(
+    BuildContext context,
+    List<ClothingItem> clothingItems,
+  ) {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: clothingItems.length,
@@ -176,32 +139,35 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
         childAspectRatio: 0.72,
       ),
       itemBuilder: (context, index) {
-        final item = clothingItems[index];
+        final item =
+            clothingItems[index];
 
         return _buildClothingCard(
+          context,
           item,
-          index,
         );
       },
     );
   }
 
   Widget _buildClothingCard(
+    BuildContext context,
     ClothingItem item,
-    int index,
   ) {
     return GestureDetector(
       onTap: () {
-        openClothingDetails(
+        _openClothingDetails(
+          context,
           item,
-          index,
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding:
+            const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.all(),
-          borderRadius: BorderRadius.circular(
+          borderRadius:
+              BorderRadius.circular(
             16,
           ),
         ),
@@ -214,7 +180,9 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                       fit: BoxFit.contain,
                     )
                   : Image.file(
-                      File(item.imagePath),
+                      File(
+                        item.imagePath,
+                      ),
                       fit: BoxFit.contain,
                     ),
             ),
@@ -223,7 +191,8 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
               item.name,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
             const SizedBox(height: 4),
@@ -248,26 +217,42 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'My Closet',
         ),
       ),
-      body: clothingItems.isEmpty
-          ? _buildEmptyState()
-          : _buildWardrobeGrid(),
+      body:
+          BlocBuilder<ClosetBloc, ClosetState>(
+        builder: (context, state) {
+          if (state.isLoading) {
+            return const Center(
+              child:
+                  CircularProgressIndicator(),
+            );
+          }
+
+          final clothingItems =
+              state.wardrobe;
+
+          if (clothingItems.isEmpty) {
+            return _buildEmptyState(
+              context,
+            );
+          }
+
+          return _buildWardrobeGrid(
+            context,
+            clothingItems,
+          );
+        },
+      ),
       floatingActionButton:
           FloatingActionButton.extended(
-        onPressed: addClothing,
+        onPressed: () {
+          _addClothing(context);
+        },
         icon: const Icon(
           Icons.add,
         ),

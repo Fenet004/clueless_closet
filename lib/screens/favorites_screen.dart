@@ -1,58 +1,23 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../bloc/closet_bloc.dart';
+import '../bloc/closet_event.dart';
+import '../bloc/closet_state.dart';
 import '../models/clothing_item.dart';
 import '../models/saved_outfit.dart';
-import '../services/database_service.dart';
 
-class FavoritesScreen extends StatefulWidget {
+class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({
     super.key,
   });
 
-  @override
-  State<FavoritesScreen> createState() {
-    return _FavoritesScreenState();
-  }
-}
-
-class _FavoritesScreenState
-    extends State<FavoritesScreen> {
-  final DatabaseService _databaseService =
-      DatabaseService.instance;
-
-  List<ClothingItem> wardrobe = [];
-  List<SavedOutfit> favorites = [];
-
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-
-    loadData();
-  }
-
-  Future<void> loadData() async {
-    final clothing =
-        await _databaseService.getAllClothing();
-
-    final saved =
-        await _databaseService.getFavoriteOutfits();
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      wardrobe = clothing;
-      favorites = saved;
-      isLoading = false;
-    });
-  }
-
-  ClothingItem? findClothingById(int id) {
+  ClothingItem? _findClothingById(
+    List<ClothingItem> wardrobe,
+    int id,
+  ) {
     for (final item in wardrobe) {
       if (item.id == id) {
         return item;
@@ -62,57 +27,39 @@ class _FavoritesScreenState
     return null;
   }
 
-  Future<void> deleteFavorite(
-    SavedOutfit favorite,
-  ) async {
-    if (favorite.id == null) {
-      return;
-    }
-
-    await _databaseService.deleteFavoriteOutfit(
-      favorite.id!,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      favorites.remove(favorite);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'Favorite Outfits',
         ),
-        actions: [
-          IconButton(
-            onPressed: loadData,
-            icon: const Icon(
-              Icons.refresh,
-            ),
-          ),
-        ],
       ),
-      body: favorites.isEmpty
-          ? const Center(
+      body:
+          BlocBuilder<ClosetBloc, ClosetState>(
+        builder: (context, state) {
+          if (state.isLoading) {
+            return const Center(
+              child:
+                  CircularProgressIndicator(),
+            );
+          }
+
+          final wardrobe =
+              state.wardrobe;
+
+          final favorites =
+              state.favorites;
+
+          if (favorites.isEmpty) {
+            return const Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding:
+                    EdgeInsets.all(32),
                 child: Column(
                   mainAxisAlignment:
-                      MainAxisAlignment.center,
+                      MainAxisAlignment
+                          .center,
                   children: [
                     Icon(
                       Icons.favorite_border,
@@ -136,47 +83,63 @@ class _FavoritesScreenState
                   ],
                 ),
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: favorites.length,
-              itemBuilder: (context, index) {
-                final favorite =
-                    favorites[index];
+            );
+          }
 
-                final top = findClothingById(
-                  favorite.topId,
-                );
+          return ListView.builder(
+            padding:
+                const EdgeInsets.all(16),
+            itemCount:
+                favorites.length,
+            itemBuilder:
+                (context, index) {
+              final favorite =
+                  favorites[index];
 
-                final bottom =
-                    findClothingById(
-                  favorite.bottomId,
-                );
+              final top =
+                  _findClothingById(
+                wardrobe,
+                favorite.topId,
+              );
 
-                final shoes =
-                    findClothingById(
-                  favorite.shoeId,
-                );
+              final bottom =
+                  _findClothingById(
+                wardrobe,
+                favorite.bottomId,
+              );
 
-                if (top == null ||
-                    bottom == null ||
-                    shoes == null) {
-                  return const SizedBox.shrink();
-                }
+              final shoes =
+                  _findClothingById(
+                wardrobe,
+                favorite.shoeId,
+              );
 
-                return _FavoriteOutfitCard(
-                  favorite: favorite,
-                  top: top,
-                  bottom: bottom,
-                  shoes: shoes,
-                  onDelete: () {
-                    deleteFavorite(
-                      favorite,
-                    );
-                  },
-                );
-              },
-            ),
+              if (top == null ||
+                  bottom == null ||
+                  shoes == null) {
+                return const SizedBox
+                    .shrink();
+              }
+
+              return _FavoriteOutfitCard(
+                favorite: favorite,
+                top: top,
+                bottom: bottom,
+                shoes: shoes,
+                onDelete: () {
+                  context
+                      .read<ClosetBloc>()
+                      .add(
+                        FavoriteDeleted(
+                          favorite,
+                        ),
+                      );
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -218,25 +181,34 @@ class _FavoriteOutfitCard
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.only(
+      margin:
+          const EdgeInsets.only(
         bottom: 16,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding:
+            const EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
               children: [
                 Expanded(
-                  child: _buildImage(top),
+                  child:
+                      _buildImage(top),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildImage(bottom),
+                const SizedBox(
+                  width: 8,
                 ),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: _buildImage(shoes),
+                  child:
+                      _buildImage(bottom),
+                ),
+                const SizedBox(
+                  width: 8,
+                ),
+                Expanded(
+                  child:
+                      _buildImage(shoes),
                 ),
               ],
             ),
@@ -244,7 +216,8 @@ class _FavoriteOutfitCard
             Text(
               '${favorite.score}% MATCH',
               style: const TextStyle(
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
@@ -252,7 +225,8 @@ class _FavoriteOutfitCard
               '${top.name} + '
               '${bottom.name} + '
               '${shoes.name}',
-              textAlign: TextAlign.center,
+              textAlign:
+                  TextAlign.center,
             ),
             const SizedBox(height: 8),
             IconButton(

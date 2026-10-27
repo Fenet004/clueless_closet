@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../bloc/closet_bloc.dart';
+import '../bloc/closet_event.dart';
+import '../bloc/closet_state.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/outfit_history.dart';
 import '../models/saved_outfit.dart';
 import '../models/weather_info.dart';
-import '../services/database_service.dart';
 import '../services/outfit_service.dart';
 import '../services/weather_service.dart';
 import '../widgets/clothing_picker.dart';
@@ -24,23 +27,15 @@ class PickerScreen extends StatefulWidget {
 
 class _PickerScreenState
     extends State<PickerScreen> {
-  final DatabaseService _databaseService =
-      DatabaseService.instance;
-
   final OutfitService _outfitService =
       OutfitService();
 
   final WeatherService _weatherService =
       WeatherService();
 
-  List<ClothingItem> wardrobe = [];
-  List<OutfitHistory> outfitHistory = [];
-
   WeatherInfo? weather;
 
-  bool isLoading = true;
   bool isWeatherLoading = false;
-
   bool isPickingOutfit = false;
   bool showMatchResult = false;
   bool outfitMarkedAsWorn = false;
@@ -51,7 +46,9 @@ class _PickerScreenState
   int currentBottomIndex = 0;
   int currentShoeIndex = 0;
 
-  String selectedOccasion = 'Everyday';
+  String selectedOccasion =
+      'Everyday';
+
   String selectedSeason = 'All';
 
   final List<String> occasions = [
@@ -71,7 +68,16 @@ class _PickerScreenState
     'Fall',
   ];
 
-  List<ClothingItem> get tops {
+  @override
+  void initState() {
+    super.initState();
+
+    loadWeather();
+  }
+
+  List<ClothingItem> _tops(
+    List<ClothingItem> wardrobe,
+  ) {
     return wardrobe.where(
       (item) {
         return item.category == 'Top';
@@ -79,7 +85,9 @@ class _PickerScreenState
     ).toList();
   }
 
-  List<ClothingItem> get bottoms {
+  List<ClothingItem> _bottoms(
+    List<ClothingItem> wardrobe,
+  ) {
     return wardrobe.where(
       (item) {
         return item.category == 'Bottom';
@@ -87,7 +95,9 @@ class _PickerScreenState
     ).toList();
   }
 
-  List<ClothingItem> get shoes {
+  List<ClothingItem> _shoes(
+    List<ClothingItem> wardrobe,
+  ) {
     return wardrobe.where(
       (item) {
         return item.category == 'Shoes';
@@ -95,38 +105,35 @@ class _PickerScreenState
     ).toList();
   }
 
-  bool get canGenerateOutfit {
-    return tops.isNotEmpty &&
-        bottoms.isNotEmpty &&
-        shoes.isNotEmpty;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    loadPickerData();
-    loadWeather();
-  }
-
-  Future<void> loadPickerData() async {
-    final clothing =
-        await _databaseService.getAllClothing();
-
-    final history =
-        await _databaseService.getOutfitHistory();
-
-    if (!mounted) {
-      return;
+  // ignore: unused_element
+  void _fixSelectedIndexes({
+    required List<ClothingItem> tops,
+    required List<ClothingItem> bottoms,
+    required List<ClothingItem> shoes,
+  }) {
+    if (tops.isEmpty) {
+      currentTopIndex = 0;
+    } else if (currentTopIndex >=
+        tops.length) {
+      currentTopIndex =
+          tops.length - 1;
     }
 
-    setState(() {
-      wardrobe = clothing;
-      outfitHistory = history;
-      isLoading = false;
+    if (bottoms.isEmpty) {
+      currentBottomIndex = 0;
+    } else if (currentBottomIndex >=
+        bottoms.length) {
+      currentBottomIndex =
+          bottoms.length - 1;
+    }
 
-      fixSelectedIndexes();
-    });
+    if (shoes.isEmpty) {
+      currentShoeIndex = 0;
+    } else if (currentShoeIndex >=
+        shoes.length) {
+      currentShoeIndex =
+          shoes.length - 1;
+    }
   }
 
   Future<void> loadWeather() async {
@@ -136,7 +143,8 @@ class _PickerScreenState
 
     try {
       final result =
-          await _weatherService.getCurrentWeather(
+          await _weatherService
+              .getCurrentWeather(
         latitude: 9.03,
         longitude: 38.74,
       );
@@ -158,7 +166,8 @@ class _PickerScreenState
         isWeatherLoading = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Could not load weather.',
@@ -168,39 +177,9 @@ class _PickerScreenState
     }
   }
 
-  void fixSelectedIndexes() {
-    if (tops.isNotEmpty &&
-        currentTopIndex >= tops.length) {
-      currentTopIndex = tops.length - 1;
-    }
-
-    if (bottoms.isNotEmpty &&
-        currentBottomIndex >=
-            bottoms.length) {
-      currentBottomIndex =
-          bottoms.length - 1;
-    }
-
-    if (shoes.isNotEmpty &&
-        currentShoeIndex >= shoes.length) {
-      currentShoeIndex =
-          shoes.length - 1;
-    }
-
-    if (currentTopIndex < 0) {
-      currentTopIndex = 0;
-    }
-
-    if (currentBottomIndex < 0) {
-      currentBottomIndex = 0;
-    }
-
-    if (currentShoeIndex < 0) {
-      currentShoeIndex = 0;
-    }
-  }
-
-  void nextTop() {
+  void nextTop(
+    List<ClothingItem> tops,
+  ) {
     if (tops.isEmpty) {
       return;
     }
@@ -216,7 +195,9 @@ class _PickerScreenState
     });
   }
 
-  void previousTop() {
+  void previousTop(
+    List<ClothingItem> tops,
+  ) {
     if (tops.isEmpty) {
       return;
     }
@@ -234,7 +215,9 @@ class _PickerScreenState
     });
   }
 
-  void nextBottom() {
+  void nextBottom(
+    List<ClothingItem> bottoms,
+  ) {
     if (bottoms.isEmpty) {
       return;
     }
@@ -250,7 +233,9 @@ class _PickerScreenState
     });
   }
 
-  void previousBottom() {
+  void previousBottom(
+    List<ClothingItem> bottoms,
+  ) {
     if (bottoms.isEmpty) {
       return;
     }
@@ -268,7 +253,9 @@ class _PickerScreenState
     });
   }
 
-  void nextShoe() {
+  void nextShoe(
+    List<ClothingItem> shoes,
+  ) {
     if (shoes.isEmpty) {
       return;
     }
@@ -284,7 +271,9 @@ class _PickerScreenState
     });
   }
 
-  void previousShoe() {
+  void previousShoe(
+    List<ClothingItem> shoes,
+  ) {
     if (shoes.isEmpty) {
       return;
     }
@@ -302,7 +291,12 @@ class _PickerScreenState
     });
   }
 
-  Future<void> pickOutfit() async {
+  Future<void> pickOutfit({
+    required List<ClothingItem> tops,
+    required List<ClothingItem> bottoms,
+    required List<ClothingItem> shoes,
+    required List<OutfitHistory> history,
+  }) async {
     if (isPickingOutfit) {
       return;
     }
@@ -314,12 +308,13 @@ class _PickerScreenState
       shoes: shoes,
       occasion: selectedOccasion,
       season: selectedSeason,
-      history: outfitHistory,
+      history: history,
       weather: weather,
     );
 
     if (outfit == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'Add at least one top, bottom, and pair of shoes first.',
@@ -374,7 +369,9 @@ class _PickerScreenState
 
     setState(() {
       currentTopIndex =
-          tops.indexOf(outfit.top);
+          tops.indexOf(
+        outfit.top,
+      );
 
       currentBottomIndex =
           bottoms.indexOf(
@@ -392,7 +389,7 @@ class _PickerScreenState
     });
   }
 
-  Future<void> saveFavoriteOutfit() async {
+  void saveFavoriteOutfit() {
     final outfit = selectedOutfit;
 
     if (outfit == null) {
@@ -402,7 +399,8 @@ class _PickerScreenState
     if (outfit.top.id == null ||
         outfit.bottom.id == null ||
         outfit.shoes.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'This outfit cannot be saved yet.',
@@ -413,56 +411,21 @@ class _PickerScreenState
       return;
     }
 
-    final alreadySaved =
-        await _databaseService
-            .isFavoriteOutfit(
-      outfit.top.id!,
-      outfit.bottom.id!,
-      outfit.shoes.id!,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    if (alreadySaved) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'This outfit is already in your favorites.',
+    context.read<ClosetBloc>().add(
+          FavoriteAdded(
+            SavedOutfit(
+              topId: outfit.top.id!,
+              bottomId:
+                  outfit.bottom.id!,
+              shoeId:
+                  outfit.shoes.id!,
+              score: outfit.score,
+            ),
           ),
-        ),
-      );
-
-      return;
-    }
-
-    final savedOutfit = SavedOutfit(
-      topId: outfit.top.id!,
-      bottomId: outfit.bottom.id!,
-      shoeId: outfit.shoes.id!,
-      score: outfit.score,
-    );
-
-    await _databaseService
-        .insertFavoriteOutfit(
-      savedOutfit,
-    );
-
-    if (!mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Outfit saved to favorites',
-        ),
-      ),
-    );
+        );
   }
 
-  Future<void> wearSelectedOutfit() async {
+  void wearSelectedOutfit() {
     final outfit = selectedOutfit;
 
     if (outfit == null) {
@@ -472,7 +435,8 @@ class _PickerScreenState
     if (outfit.top.id == null ||
         outfit.bottom.id == null ||
         outfit.shoes.id == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
         const SnackBar(
           content: Text(
             'This outfit cannot be added to history.',
@@ -483,43 +447,28 @@ class _PickerScreenState
       return;
     }
 
-    final history = OutfitHistory(
-      topId: outfit.top.id!,
-      bottomId: outfit.bottom.id!,
-      shoeId: outfit.shoes.id!,
-      score: outfit.score,
-      wornAt: DateTime.now(),
-    );
-
-    final savedHistory =
-        await _databaseService
-            .insertOutfitHistory(
-      history,
-    );
-
-    if (!mounted) {
-      return;
-    }
+    context.read<ClosetBloc>().add(
+          HistoryAdded(
+            OutfitHistory(
+              topId: outfit.top.id!,
+              bottomId:
+                  outfit.bottom.id!,
+              shoeId:
+                  outfit.shoes.id!,
+              score: outfit.score,
+              wornAt: DateTime.now(),
+            ),
+          ),
+        );
 
     setState(() {
-      outfitHistory.insert(
-        0,
-        savedHistory,
-      );
-
       outfitMarkedAsWorn = true;
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Outfit added to history',
-        ),
-      ),
-    );
   }
 
-  String getMatchMessage(int score) {
+  String getMatchMessage(
+    int score,
+  ) {
     if (score >= 90) {
       return 'Perfect match!';
     }
@@ -539,7 +488,8 @@ class _PickerScreenState
     if (isWeatherLoading) {
       return const Center(
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding:
+              EdgeInsets.all(16),
           child:
               CircularProgressIndicator(),
         ),
@@ -582,9 +532,10 @@ class _PickerScreenState
                 'No rain detected',
               ),
         trailing: IconButton(
-          onPressed: isWeatherLoading
-              ? null
-              : loadWeather,
+          onPressed:
+              isWeatherLoading
+                  ? null
+                  : loadWeather,
           icon: const Icon(
             Icons.refresh,
           ),
@@ -594,7 +545,10 @@ class _PickerScreenState
   }
 
   Widget _buildResult() {
-    if (selectedOutfit == null) {
+    final outfit =
+        selectedOutfit;
+
+    if (outfit == null) {
       return const SizedBox.shrink();
     }
 
@@ -618,7 +572,7 @@ class _PickerScreenState
                 MainAxisAlignment.center,
             children: [
               Text(
-                '${selectedOutfit!.score}% MATCH',
+                '${outfit.score}% MATCH',
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight:
@@ -637,7 +591,7 @@ class _PickerScreenState
           ),
           Text(
             getMatchMessage(
-              selectedOutfit!.score,
+              outfit.score,
             ),
           ),
           const SizedBox(height: 12),
@@ -660,267 +614,408 @@ class _PickerScreenState
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    if (!canGenerateOutfit) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Outfit Picker',
-          ),
-          actions: [
-            IconButton(
-              onPressed: () {
-                loadPickerData();
-                loadWeather();
-              },
-              icon: const Icon(
-                Icons.refresh,
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Padding(
+        padding:
+            EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment:
+              MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.auto_awesome,
+              size: 72,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Not enough clothing yet',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight:
+                    FontWeight.bold,
               ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Add at least one top, one bottom, and one pair of shoes to generate an outfit.',
+              textAlign:
+                  TextAlign.center,
             ),
           ],
         ),
-        body: const Center(
-          child: Padding(
-            padding: EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment:
-                  MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.auto_awesome,
-                  size: 72,
-                ),
-                SizedBox(height: 20),
-                Text(
-                  'Not enough clothing yet',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight:
-                        FontWeight.bold,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<
+        ClosetBloc,
+        ClosetState>(
+      builder: (context, state) {
+        if (state.isLoading) {
+          return const Scaffold(
+            body: Center(
+              child:
+                  CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        final wardrobe =
+            state.wardrobe;
+
+        final tops =
+            _tops(wardrobe);
+
+        final bottoms =
+            _bottoms(wardrobe);
+
+        final shoes =
+            _shoes(wardrobe);
+
+        final canGenerateOutfit =
+            tops.isNotEmpty &&
+                bottoms.isNotEmpty &&
+                shoes.isNotEmpty;
+
+        /*
+         * We cannot safely call setState()
+         * while build() is running.
+         *
+         * Instead we simply derive safe indexes
+         * for rendering below.
+         */
+        final safeTopIndex =
+            tops.isEmpty
+                ? 0
+                : currentTopIndex
+                        .clamp(
+                          0,
+                          tops.length - 1,
+                        );
+
+        final safeBottomIndex =
+            bottoms.isEmpty
+                ? 0
+                : currentBottomIndex
+                        .clamp(
+                          0,
+                          bottoms.length -
+                              1,
+                        );
+
+        final safeShoeIndex =
+            shoes.isEmpty
+                ? 0
+                : currentShoeIndex
+                        .clamp(
+                          0,
+                          shoes.length - 1,
+                        );
+
+        if (!canGenerateOutfit) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text(
+                'Outfit Picker',
+              ),
+              actions: [
+                IconButton(
+                  onPressed:
+                      loadWeather,
+                  icon: const Icon(
+                    Icons.refresh,
                   ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Add at least one top, one bottom, and one pair of shoes to generate an outfit.',
-                  textAlign:
-                      TextAlign.center,
                 ),
               ],
             ),
-          ),
-        ),
-      );
-    }
+            body:
+                _buildEmptyState(),
+          );
+        }
 
-    final currentTop =
-        tops[currentTopIndex];
+        final currentTop =
+            tops[safeTopIndex];
 
-    final currentBottom =
-        bottoms[currentBottomIndex];
+        final currentBottom =
+            bottoms[safeBottomIndex];
 
-    final currentShoe =
-        shoes[currentShoeIndex];
+        final currentShoe =
+            shoes[safeShoeIndex];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Outfit Picker',
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {
-              loadPickerData();
-              loadWeather();
-            },
-            icon: const Icon(
-              Icons.refresh,
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text(
+              'Outfit Picker',
             ),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding:
-              const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.stretch,
-            children: [
-              _buildWeatherCard(),
-
-              const SizedBox(height: 20),
-
-              SelectionChips(
-                title:
-                    'Where are you going?',
-                options: occasions,
-                selectedValue:
-                    selectedOccasion,
-                onSelected: (occasion) {
-                  setState(() {
-                    selectedOccasion =
-                        occasion;
-
-                    selectedOutfit =
-                        null;
-
-                    showMatchResult =
-                        false;
-
-                    outfitMarkedAsWorn =
-                        false;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 20),
-
-              SelectionChips(
-                title: 'Season',
-                options: seasons,
-                selectedValue:
-                    selectedSeason,
-                onSelected: (season) {
-                  setState(() {
-                    selectedSeason =
-                        season;
-
-                    selectedOutfit =
-                        null;
-
-                    showMatchResult =
-                        false;
-
-                    outfitMarkedAsWorn =
-                        false;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 28),
-
-              const Text(
-                'TOP',
-                textAlign:
-                    TextAlign.center,
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              ClothingPicker(
-                item: currentTop,
-                onPrevious:
-                    previousTop,
-                onNext: nextTop,
-                enabled:
-                    !isPickingOutfit,
-              ),
-
-              const SizedBox(height: 24),
-
-              const Text(
-                'BOTTOM',
-                textAlign:
-                    TextAlign.center,
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              ClothingPicker(
-                item: currentBottom,
-                onPrevious:
-                    previousBottom,
-                onNext: nextBottom,
-                enabled:
-                    !isPickingOutfit,
-              ),
-
-              const SizedBox(height: 24),
-
-              const Text(
-                'SHOES',
-                textAlign:
-                    TextAlign.center,
-                style: TextStyle(
-                  fontWeight:
-                      FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              ClothingPicker(
-                item: currentShoe,
-                onPrevious:
-                    previousShoe,
-                onNext: nextShoe,
-                enabled:
-                    !isPickingOutfit,
-              ),
-
-              const SizedBox(height: 28),
-
-              _buildResult(),
-
-              const SizedBox(height: 20),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed:
-                      isPickingOutfit
-                          ? null
-                          : pickOutfit,
-                  style:
-                      ElevatedButton.styleFrom(
-                    padding:
-                        const EdgeInsets
-                            .symmetric(
-                      vertical: 18,
-                    ),
-                  ),
-                  child: isPickingOutfit
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child:
-                              CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'PICK MY OUTFIT',
-                          style:
-                              TextStyle(
-                            fontSize: 16,
-                            fontWeight:
-                                FontWeight
-                                    .bold,
-                          ),
-                        ),
+            actions: [
+              IconButton(
+                onPressed:
+                    loadWeather,
+                icon: const Icon(
+                  Icons.refresh,
                 ),
               ),
             ],
           ),
-        ),
-      ),
+          body: SafeArea(
+            child:
+                SingleChildScrollView(
+              padding:
+                  const EdgeInsets
+                      .all(20),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment
+                        .stretch,
+                children: [
+                  _buildWeatherCard(),
+
+                  const SizedBox(
+                    height: 20,
+                  ),
+
+                  SelectionChips(
+                    title:
+                        'Where are you going?',
+                    options:
+                        occasions,
+                    selectedValue:
+                        selectedOccasion,
+                    onSelected:
+                        (occasion) {
+                      setState(() {
+                        selectedOccasion =
+                            occasion;
+                        selectedOutfit =
+                            null;
+                        showMatchResult =
+                            false;
+                        outfitMarkedAsWorn =
+                            false;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(
+                    height: 20,
+                  ),
+
+                  SelectionChips(
+                    title:
+                        'Season',
+                    options:
+                        seasons,
+                    selectedValue:
+                        selectedSeason,
+                    onSelected:
+                        (season) {
+                      setState(() {
+                        selectedSeason =
+                            season;
+                        selectedOutfit =
+                            null;
+                        showMatchResult =
+                            false;
+                        outfitMarkedAsWorn =
+                            false;
+                      });
+                    },
+                  ),
+
+                  const SizedBox(
+                    height: 28,
+                  ),
+
+                  const Text(
+                    'TOP',
+                    textAlign:
+                        TextAlign.center,
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 8,
+                  ),
+
+                  ClothingPicker(
+                    item: currentTop,
+                    onPrevious: () {
+                      currentTopIndex =
+                          safeTopIndex;
+
+                      previousTop(
+                        tops,
+                      );
+                    },
+                    onNext: () {
+                      currentTopIndex =
+                          safeTopIndex;
+
+                      nextTop(
+                        tops,
+                      );
+                    },
+                    enabled:
+                        !isPickingOutfit,
+                  ),
+
+                  const SizedBox(
+                    height: 24,
+                  ),
+
+                  const Text(
+                    'BOTTOM',
+                    textAlign:
+                        TextAlign.center,
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 8,
+                  ),
+
+                  ClothingPicker(
+                    item:
+                        currentBottom,
+                    onPrevious: () {
+                      currentBottomIndex =
+                          safeBottomIndex;
+
+                      previousBottom(
+                        bottoms,
+                      );
+                    },
+                    onNext: () {
+                      currentBottomIndex =
+                          safeBottomIndex;
+
+                      nextBottom(
+                        bottoms,
+                      );
+                    },
+                    enabled:
+                        !isPickingOutfit,
+                  ),
+
+                  const SizedBox(
+                    height: 24,
+                  ),
+
+                  const Text(
+                    'SHOES',
+                    textAlign:
+                        TextAlign.center,
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 8,
+                  ),
+
+                  ClothingPicker(
+                    item: currentShoe,
+                    onPrevious: () {
+                      currentShoeIndex =
+                          safeShoeIndex;
+
+                      previousShoe(
+                        shoes,
+                      );
+                    },
+                    onNext: () {
+                      currentShoeIndex =
+                          safeShoeIndex;
+
+                      nextShoe(
+                        shoes,
+                      );
+                    },
+                    enabled:
+                        !isPickingOutfit,
+                  ),
+
+                  const SizedBox(
+                    height: 28,
+                  ),
+
+                  _buildResult(),
+
+                  const SizedBox(
+                    height: 20,
+                  ),
+
+                  SizedBox(
+                    width:
+                        double.infinity,
+                    child:
+                        ElevatedButton(
+                      onPressed:
+                          isPickingOutfit
+                              ? null
+                              : () {
+                                  pickOutfit(
+                                    tops:
+                                        tops,
+                                    bottoms:
+                                        bottoms,
+                                    shoes:
+                                        shoes,
+                                    history:
+                                        state.history,
+                                  );
+                                },
+                      style:
+                          ElevatedButton
+                              .styleFrom(
+                        padding:
+                            const EdgeInsets
+                                .symmetric(
+                          vertical: 18,
+                        ),
+                      ),
+                      child:
+                          isPickingOutfit
+                              ? const SizedBox(
+                                  width:
+                                      22,
+                                  height:
+                                      22,
+                                  child:
+                                      CircularProgressIndicator(
+                                    strokeWidth:
+                                        2,
+                                  ),
+                                )
+                              : const Text(
+                                  'PICK MY OUTFIT',
+                                  style:
+                                      TextStyle(
+                                    fontSize:
+                                        16,
+                                    fontWeight:
+                                        FontWeight.bold,
+                                  ),
+                                ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

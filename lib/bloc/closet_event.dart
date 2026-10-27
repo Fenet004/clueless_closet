@@ -50,10 +50,10 @@ class FavoriteAdded extends ClosetEvent {
   List<Object?> get props => [outfit];
 }
 
-class FavoritedDeleted extends ClosetEvent {
+class FavoriteDeleted extends ClosetEvent {
   final SavedOutfit outfit;
 
-  const FavoritedDeleted(this.outfit);
+  const FavoriteDeleted(this.outfit);
 
   @override
   List<Object?> get props => [outfit];
