@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../bloc/closet_bloc.dart';
 import '../bloc/closet_event.dart';
 import '../bloc/closet_state.dart';
@@ -9,6 +8,7 @@ import '../models/outfit.dart';
 import '../models/outfit_history.dart';
 import '../models/saved_outfit.dart';
 import '../models/weather_info.dart';
+import '../services/location_service.dart';
 import '../services/outfit_service.dart';
 import '../services/weather_service.dart';
 import '../widgets/clothing_picker.dart';
@@ -25,13 +25,12 @@ class PickerScreen extends StatefulWidget {
   }
 }
 
-class _PickerScreenState
-    extends State<PickerScreen> {
-  final OutfitService _outfitService =
-      OutfitService();
+class _PickerScreenState extends State<PickerScreen> {
+  final LocationService _locationService = LocationService();
 
-  final WeatherService _weatherService =
-      WeatherService();
+  final OutfitService _outfitService = OutfitService();
+
+  final WeatherService _weatherService = WeatherService();
 
   WeatherInfo? weather;
 
@@ -39,6 +38,8 @@ class _PickerScreenState
   bool isPickingOutfit = false;
   bool showMatchResult = false;
   bool outfitMarkedAsWorn = false;
+  bool locationPermissionPermanentlyDenied = false;
+  bool locationServiceDisabled = false;
 
   Outfit? selectedOutfit;
 
@@ -46,8 +47,9 @@ class _PickerScreenState
   int currentBottomIndex = 0;
   int currentShoeIndex = 0;
 
-  String selectedOccasion =
-      'Everyday';
+  String? locationMessage;
+
+  String selectedOccasion = 'Everyday';
 
   String selectedSeason = 'All';
 
@@ -105,48 +107,20 @@ class _PickerScreenState
     ).toList();
   }
 
-  // ignore: unused_element
-  void _fixSelectedIndexes({
-    required List<ClothingItem> tops,
-    required List<ClothingItem> bottoms,
-    required List<ClothingItem> shoes,
-  }) {
-    if (tops.isEmpty) {
-      currentTopIndex = 0;
-    } else if (currentTopIndex >=
-        tops.length) {
-      currentTopIndex =
-          tops.length - 1;
-    }
-
-    if (bottoms.isEmpty) {
-      currentBottomIndex = 0;
-    } else if (currentBottomIndex >=
-        bottoms.length) {
-      currentBottomIndex =
-          bottoms.length - 1;
-    }
-
-    if (shoes.isEmpty) {
-      currentShoeIndex = 0;
-    } else if (currentShoeIndex >=
-        shoes.length) {
-      currentShoeIndex =
-          shoes.length - 1;
-    }
-  }
-
   Future<void> loadWeather() async {
     setState(() {
       isWeatherLoading = true;
+      locationMessage = null;
+      locationPermissionPermanentlyDenied = false;
+      locationServiceDisabled = false;
     });
 
     try {
-      final result =
-          await _weatherService
-              .getCurrentWeather(
-        latitude: 9.03,
-        longitude: 38.74,
+      final position = await _locationService.getCurrentLocation();
+
+      final result = await _weatherService.getCurrentWeather(
+        latitude: position.latitude,
+        longitude: position.longitude,
       );
 
       if (!mounted) {
@@ -156,6 +130,42 @@ class _PickerScreenState
       setState(() {
         weather = result;
         isWeatherLoading = false;
+        locationMessage = null;
+        locationPermissionPermanentlyDenied = false;
+        locationServiceDisabled = false;
+      });
+    } on LocationException catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      String message;
+
+      bool permanentlyDenied = false;
+      bool serviceDisabled = false;
+
+      switch (e.failure) {
+        case LocationFailure.serviceDisabled:
+          message = 'Location services are turned off.';
+          serviceDisabled = true;
+          break;
+        
+        case LocationFailure.permissionDenied:
+          message = 'Location permission was denied.';
+          break;
+        
+        case LocationFailure.permissionDeniedForever:
+          message = 'Location permission is disabled. Enable it in app Settings.';
+          permanentlyDenied = true;
+          break;
+      }
+
+      setState(() {
+        weather = null;
+        isWeatherLoading = false;
+        locationMessage = message;
+        locationPermissionPermanentlyDenied = permanentlyDenied;
+        locationServiceDisabled = serviceDisabled;
       });
     } catch (e) {
       if (!mounted) {
@@ -163,17 +173,10 @@ class _PickerScreenState
       }
 
       setState(() {
+        weather = null;
         isWeatherLoading = false;
+        locationMessage = 'Could not load local weather.';
       });
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Could not load weather.',
-          ),
-        ),
-      );
     }
   }
 
@@ -415,10 +418,8 @@ class _PickerScreenState
           FavoriteAdded(
             SavedOutfit(
               topId: outfit.top.id!,
-              bottomId:
-                  outfit.bottom.id!,
-              shoeId:
-                  outfit.shoes.id!,
+              bottomId: outfit.bottom.id!,
+              shoeId: outfit.shoes.id!,
               score: outfit.score,
             ),
           ),
@@ -451,10 +452,8 @@ class _PickerScreenState
           HistoryAdded(
             OutfitHistory(
               topId: outfit.top.id!,
-              bottomId:
-                  outfit.bottom.id!,
-              shoeId:
-                  outfit.shoes.id!,
+              bottomId: outfit.bottom.id!,
+              shoeId: outfit.shoes.id!,
               score: outfit.score,
               wornAt: DateTime.now(),
             ),
@@ -486,30 +485,71 @@ class _PickerScreenState
 
   Widget _buildWeatherCard() {
     if (isWeatherLoading) {
-      return const Center(
+      return const Card(
         child: Padding(
-          padding:
-              EdgeInsets.all(16),
-          child:
-              CircularProgressIndicator(),
+          padding: EdgeInsets.all(20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                ),
+              ),
+              SizedBox(width: 12),
+              Text('Getting local weather...'),
+            ],
+          ),
         ),
       );
     }
 
     if (weather == null) {
+      Widget recoveryButton;
+
+      if (locationPermissionPermanentlyDenied) {
+        recoveryButton = OutlinedButton.icon(
+          onPressed: () {
+            _locationService.openAppSettings();
+          },
+          icon: const Icon(Icons.settings),
+          label: const Text('OPEN SETTINGS'),
+        );
+      } else if (locationServiceDisabled) {
+        recoveryButton = OutlinedButton.icon(
+          onPressed: () {
+            _locationService.openLocationSettings();
+          },
+          icon: const Icon(Icons.location_on_outlined),
+          label: const Text('TURN ON LOCATION'),
+        );
+      } else {
+        recoveryButton = OutlinedButton.icon(
+          onPressed: loadWeather,
+          icon: const Icon(Icons.refresh),
+          label: const Text('TRY AGAIN'),
+        );
+      }
+
       return Card(
-        child: ListTile(
-          leading: const Icon(
-            Icons.cloud_off_outlined,
-          ),
-          title: const Text(
-            'Weather unavailable',
-          ),
-          trailing: IconButton(
-            onPressed: loadWeather,
-            icon: const Icon(
-              Icons.refresh,
-            ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.location_off_outlined,
+                size: 32,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                locationMessage ?? 'Weather unavailable',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              recoveryButton,
+            ],
           ),
         ),
       );
@@ -517,36 +557,32 @@ class _PickerScreenState
 
     return Card(
       child: ListTile(
-        leading: const Icon(
-          Icons.cloud_outlined,
+        leading: Icon(
+          weather!.isRainy
+              ? Icons.umbrella_outlined
+              : Icons.wb_sunny_outlined,
         ),
         title: Text(
           '${weather!.temperature.toStringAsFixed(1)}°C'
           ' • ${weather!.temperatureCategory}',
         ),
-        subtitle: weather!.isRainy
-            ? const Text(
-                'Rain expected',
-              )
-            : const Text(
-                'No rain detected',
-              ),
+        subtitle: Text(
+          weather!.isRainy
+              ? 'Rain expected'
+              : 'No rain detected',
+        ),
         trailing: IconButton(
-          onPressed:
-              isWeatherLoading
-                  ? null
-                  : loadWeather,
-          icon: const Icon(
-            Icons.refresh,
-          ),
+          onPressed: isWeatherLoading
+              ? null
+              : loadWeather,
+          icon: const Icon(Icons.refresh),
         ),
       ),
     );
   }
 
   Widget _buildResult() {
-    final outfit =
-        selectedOutfit;
+    final outfit = selectedOutfit;
 
     if (outfit == null) {
       return const SizedBox.shrink();
@@ -562,37 +598,28 @@ class _PickerScreenState
         children: [
           Text(
             '$selectedOccasion • $selectedSeason',
-            style: const TextStyle(
-              fontSize: 14,
-            ),
+            style: const TextStyle(fontSize: 14),
           ),
           const SizedBox(height: 6),
           Row(
-            mainAxisAlignment:
-                MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 '${outfit.score}% MATCH',
                 style: const TextStyle(
                   fontSize: 22,
-                  fontWeight:
-                      FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
-                onPressed:
-                    saveFavoriteOutfit,
-                icon: const Icon(
-                  Icons.favorite_border,
-                ),
+                onPressed: saveFavoriteOutfit,
+                icon: const Icon(Icons.favorite_border),
               ),
             ],
           ),
           Text(
-            getMatchMessage(
-              outfit.score,
-            ),
+            getMatchMessage(outfit.score),
           ),
           const SizedBox(height: 12),
           ElevatedButton.icon(
@@ -600,9 +627,7 @@ class _PickerScreenState
                 outfitMarkedAsWorn
                     ? null
                     : wearSelectedOutfit,
-            icon: const Icon(
-              Icons.check,
-            ),
+            icon: const Icon(Icons.check),
             label: Text(
               outfitMarkedAsWorn
                   ? 'WORN TODAY'
@@ -617,11 +642,9 @@ class _PickerScreenState
   Widget _buildEmptyState() {
     return const Center(
       child: Padding(
-        padding:
-            EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.auto_awesome,
@@ -632,15 +655,13 @@ class _PickerScreenState
               'Not enough clothing yet',
               style: TextStyle(
                 fontSize: 22,
-                fontWeight:
-                    FontWeight.bold,
+                fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(height: 8),
             Text(
               'Add at least one top, one bottom, and one pair of shoes to generate an outfit.',
-              textAlign:
-                  TextAlign.center,
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -657,36 +678,24 @@ class _PickerScreenState
         if (state.isLoading) {
           return const Scaffold(
             body: Center(
-              child:
-                  CircularProgressIndicator(),
+              child: CircularProgressIndicator(),
             ),
           );
         }
 
-        final wardrobe =
-            state.wardrobe;
+        final wardrobe = state.wardrobe;
 
-        final tops =
-            _tops(wardrobe);
+        final tops = _tops(wardrobe);
 
-        final bottoms =
-            _bottoms(wardrobe);
+        final bottoms = _bottoms(wardrobe);
 
-        final shoes =
-            _shoes(wardrobe);
+        final shoes = _shoes(wardrobe);
 
         final canGenerateOutfit =
             tops.isNotEmpty &&
                 bottoms.isNotEmpty &&
                 shoes.isNotEmpty;
 
-        /*
-         * We cannot safely call setState()
-         * while build() is running.
-         *
-         * Instead we simply derive safe indexes
-         * for rendering below.
-         */
         final safeTopIndex =
             tops.isEmpty
                 ? 0
@@ -702,8 +711,7 @@ class _PickerScreenState
                 : currentBottomIndex
                         .clamp(
                           0,
-                          bottoms.length -
-                              1,
+                          bottoms.length - 1,
                         );
 
         final safeShoeIndex =
@@ -721,51 +729,26 @@ class _PickerScreenState
               title: const Text(
                 'Outfit Picker',
               ),
-              actions: [
-                IconButton(
-                  onPressed:
-                      loadWeather,
-                  icon: const Icon(
-                    Icons.refresh,
-                  ),
-                ),
-              ],
             ),
-            body:
-                _buildEmptyState(),
+            body: _buildEmptyState(),
           );
         }
 
-        final currentTop =
-            tops[safeTopIndex];
+        final currentTop = tops[safeTopIndex];
 
-        final currentBottom =
-            bottoms[safeBottomIndex];
+        final currentBottom = bottoms[safeBottomIndex];
 
-        final currentShoe =
-            shoes[safeShoeIndex];
+        final currentShoe = shoes[safeShoeIndex];
 
         return Scaffold(
           appBar: AppBar(
             title: const Text(
               'Outfit Picker',
             ),
-            actions: [
-              IconButton(
-                onPressed:
-                    loadWeather,
-                icon: const Icon(
-                  Icons.refresh,
-                ),
-              ),
-            ],
           ),
           body: SafeArea(
-            child:
-                SingleChildScrollView(
-              padding:
-                  const EdgeInsets
-                      .all(20),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment:
                     CrossAxisAlignment
@@ -778,70 +761,46 @@ class _PickerScreenState
                   ),
 
                   SelectionChips(
-                    title:
-                        'Where are you going?',
-                    options:
-                        occasions,
-                    selectedValue:
-                        selectedOccasion,
-                    onSelected:
-                        (occasion) {
+                    title: 'Where are you going?',
+                    options: occasions,
+                    selectedValue: selectedOccasion,
+                    onSelected: (occasion) {
                       setState(() {
-                        selectedOccasion =
-                            occasion;
-                        selectedOutfit =
-                            null;
-                        showMatchResult =
-                            false;
-                        outfitMarkedAsWorn =
-                            false;
+                        selectedOccasion = occasion;
+                        selectedOutfit = null;
+                        showMatchResult = false;
+                        outfitMarkedAsWorn = false;
                       });
                     },
                   ),
 
-                  const SizedBox(
-                    height: 20,
-                  ),
+                  const SizedBox(height: 20),
 
                   SelectionChips(
-                    title:
-                        'Season',
-                    options:
-                        seasons,
-                    selectedValue:
-                        selectedSeason,
-                    onSelected:
-                        (season) {
+                    title: 'Season',
+                    options: seasons,
+                    selectedValue: selectedSeason,
+                    onSelected: (season) {
                       setState(() {
-                        selectedSeason =
-                            season;
-                        selectedOutfit =
-                            null;
-                        showMatchResult =
-                            false;
-                        outfitMarkedAsWorn =
-                            false;
+                        selectedSeason = season;
+                        selectedOutfit = null;
+                        showMatchResult = false;
+                        outfitMarkedAsWorn = false;
                       });
                     },
                   ),
 
-                  const SizedBox(
-                    height: 28,
-                  ),
+                  const SizedBox(height: 28),
 
                   const Text(
                     'TOP',
-                    textAlign:
-                        TextAlign.center,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(
-                    height: 8,
-                  ),
+                  const SizedBox(height: 8),
 
                   ClothingPicker(
                     item: currentTop,
