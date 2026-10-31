@@ -8,6 +8,9 @@ class ClothingItem {
   final String style;
   final String occasion;
   final String season;
+  final int warmthLevel;
+  final bool rainSuitable;
+  final bool waterResistant;
 
   ClothingItem({
     this.id,
@@ -19,6 +22,9 @@ class ClothingItem {
     required this.occasion,
     required this.season,
     this.isAssetImage = true,
+    required this.warmthLevel,
+    required this.rainSuitable,
+    required this.waterResistant,
   });
 
   ClothingItem copyWith({
@@ -31,6 +37,9 @@ class ClothingItem {
     String? style,
     String? occasion,
     String? season,
+    int? warmthLevel,
+    bool? rainSuitable,
+    bool? waterResistant,
   }) {
     return ClothingItem(
       id: id ?? this.id,
@@ -42,6 +51,9 @@ class ClothingItem {
       style: style ?? this.style,
       occasion: occasion ?? this.occasion,
       season: season ?? this.season,
+      warmthLevel: warmthLevel ?? this.warmthLevel,
+      rainSuitable: rainSuitable ?? this.rainSuitable,
+      waterResistant: waterResistant ?? this.waterResistant,
     );
   }
 
@@ -56,6 +68,9 @@ class ClothingItem {
       'style': style,
       'occasion': occasion,
       'season': season,
+      'warmthLevel': warmthLevel,
+      'rainSuitable': rainSuitable ? 1 : 0,
+      'waterResistant': waterResistant ? 1 : 0,
     };
   }
 
@@ -70,6 +85,9 @@ class ClothingItem {
       style: map['style'] as String,
       occasion: map['occasion'] as String,
       season: map['season'] as String,
+      warmthLevel: map['warmthLevel'] as int,
+      rainSuitable: map['rainSuitable'] == 1,
+      waterResistant: map['waterResistant'] == 1,
     );
   }
 }

@@ -29,7 +29,7 @@ class DatabaseService {
 
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onConfigure: (db) async {
         await db.execute(
           'PRAGMA foreign_keys = ON',
@@ -55,7 +55,10 @@ class DatabaseService {
         isAssetImage INTEGER NOT NULL,
         style TEXT NOT NULL,
         occasion TEXT NOT NULL,
-        season TEXT NOT NULL
+        season TEXT NOT NULL,
+        warmthLevel INTEGER NOT NULL DEFAULT 3,
+        rainSuitable INTEGER NOT NULL DEFAULT 0,
+        waterResistant INTEGER NOT NULL DEFAULT 0,
       )
       ''',
     );
@@ -178,6 +181,32 @@ class DatabaseService {
             REFERENCES clothing(id)
             ON DELETE CASCADE
         )
+        ''',
+      );
+    }
+
+    if (oldVersion < 5) {
+      await db.execute(
+        '''
+        ALTER TABLE clothing
+        ADD COLUMN warmthLevel INTEGER
+        NOT NULL DEFAULT 3
+        ''',
+      );
+
+      await db.execute(
+        '''
+        ALTER TABLE clothing
+        ADD COLUMN rainSuitable INTEGER
+        NOT NULL DEFAULT 0
+        ''',
+      );
+
+      await db.execute(
+        '''
+        ALTER TABLE clothing
+        ADD COLUMN waterResistant INTEGER
+        NOT NULL DEFAULT 0
         ''',
       );
     }

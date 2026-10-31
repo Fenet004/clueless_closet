@@ -52,6 +52,30 @@ class ClothingDetailsScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
 
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(
+                  label: Text(
+                    'Warmth ${item.warmthLevel}/5',
+                  ),
+                ),
+                if (item.rainSuitable)
+                  const Chip(
+                    label: Text(
+                      'Rain suitable',
+                    ),
+                  ),
+                if (item.waterResistant)
+                  const Chip(
+                    label: Text(
+                      'Water resistant',
+                    ),
+                  ),
+              ],
+            ),
+
             const SizedBox(height: 32),
 
             ElevatedButton.icon(

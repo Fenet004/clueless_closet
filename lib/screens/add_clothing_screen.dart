@@ -24,6 +24,10 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
   String? selectedOccasion;
   String? selectedSeason;
 
+  int warmthLevel = 3;
+  bool rainSuitable = false;
+  bool waterResistant = false;
+
   final List<String> categories = [
     'Top',
     'Bottom',
@@ -101,6 +105,9 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
       style: selectedStyle!,
       occasion: selectedOccasion!,
       season: selectedSeason!,
+      warmthLevel: warmthLevel,
+      rainSuitable: rainSuitable,
+      waterResistant: waterResistant,
     );
 
     if (!mounted) {
@@ -172,6 +179,23 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
         );
       },
     );
+  }
+
+  String _warmthLabel(int level) {
+    switch (level) {
+      case 1:
+        return 'Very light';
+      case 2:
+        return 'Light';
+      case 3:
+        return 'Medium';
+      case 4:
+        return 'Warm';
+      case 5:
+        return 'Very warm';
+      default: 
+        return 'Medium';
+    }
   }
 
   @override
@@ -398,6 +422,65 @@ class _AddClothingScreenState extends State<AddClothingScreen> {
                   }
 
                   return null;
+                },
+              ),
+
+              const SizedBox(height: 20),
+
+              const Text(
+                'Warmth Level',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              Slider(
+                value: warmthLevel.toDouble(),
+                min: 1,
+                max: 5,
+                divisions: 4,
+                label: warmthLevel.toString(),
+                onChanged: (value) {
+                  setState(() {
+                    warmthLevel = value.round();
+                  });
+                }
+              ),
+
+              Text(
+                _warmthLabel(warmthLevel),
+              ),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Suitable for rain',
+                ),
+                subtitle: const Text(
+                  'Comfortable to wear in rainy conditions',
+                ),
+                value: rainSuitable,
+                onChanged: (value) {
+                  setState(() {
+                    rainSuitable = value;
+                  });
+                },
+              ),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Water resistant',
+                ),
+                subtitle: const Text(
+                  'The item can resist light water exposure',
+                ),
+                value: waterResistant,
+                onChanged: (value) {
+                  setState(() {
+                    waterResistant = value;
+                  });
                 },
               ),
 

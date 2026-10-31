@@ -24,6 +24,10 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
   late String selectedCategory;
   late String selectedColor;
 
+  late int warmthLevel;
+  late bool rainSuitable;
+  late bool waterResistant;
+
   final List<String> categories = [
     'Top',
     'Bottom',
@@ -51,6 +55,10 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
 
     selectedCategory = widget.item.category;
     selectedColor = widget.item.color;
+
+    warmthLevel = widget.item.warmthLevel;
+    rainSuitable = widget.item.rainSuitable;
+    waterResistant = widget.item.waterResistant;
   }
 
   @override
@@ -120,6 +128,9 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
       color: selectedColor,
       imagePath: selectedImage?.path ?? widget.item.imagePath,
       isAssetImage: selectedImage == null ? widget.item.isAssetImage : false,
+      warmthLevel: warmthLevel,
+      rainSuitable: rainSuitable,
+      waterResistant: waterResistant,
     );
 
     Navigator.pop(context, updatedItem);

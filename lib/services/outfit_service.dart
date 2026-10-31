@@ -200,43 +200,60 @@ class OutfitService {
   ) {
     int score = 0;
 
-    switch (weather.temperatureCategory) {
-      case 'Hot':
-        if (item.season == 'Summer') {
+    score += _temperatureCompatibility(
+      item.warmthLevel,
+      weather.temperature,
+    );
+
+    if (weather.isRainy) {
+      if (item.rainSuitable) {
+        score += 6;
+      } else {
+        score -= 6;
+      }
+
+      if (item.waterResistant) {
+        if (item.category == 'Shoes') {
           score += 10;
-        } else if (item.season == 'Winter') {
-          score -= 15;
+        } else {
+          score += 5;
         }
-
-        break;
-
-      case 'Warm':
-        if (item.season == 'Summer' || item.season == 'All') {
-          score += 6;
-        }
-
-        break;
-
-      case 'Cool':
-        if (item.season == 'Spring' ||
-            item.season == 'Fall' ||
-            item.season == 'All') {
-          score += 6;
-        }
-
-        break;
-
-      case 'Cold':
-        if (item.season == 'Winter') {
-          score += 12;
-        } else if (item.season == 'Summer') {
-          score -= 15;
-        }
-
-        break;
+      }
     }
 
     return score;
+  }
+
+  int _temperatureCompatibility(
+    int warmthLevel,
+    double temperature,
+  ) {
+    int idealWarmth;
+
+    if (temperature >= 28) {
+      idealWarmth = 1;
+    } else if (temperature >= 22) {
+      idealWarmth = 2;
+    } else if (temperature >= 16) {
+      idealWarmth = 3;
+    } else if (temperature >= 10) {
+      idealWarmth = 4;
+    } else {
+      idealWarmth = 5;
+    }
+
+    final difference = (warmthLevel - idealWarmth).abs();
+
+    switch (difference) {
+      case 0:
+        return 10;
+      case 1:
+        return 5;
+      case 2:
+        return 0;
+      default: 
+        return -8;
+    }
   }
 
   List<ClothingItem> _filterItems({
