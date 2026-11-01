@@ -5,6 +5,7 @@ import 'bloc/closet_event.dart';
 import 'screens/main_navigation_screen.dart';
 import 'services/database_service.dart';
 import 'services/image_storage_service.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const CluelessClosetApp());
@@ -25,9 +26,7 @@ class CluelessClosetApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Clueless Closet',
-        theme: ThemeData(
-          useMaterial3: true,
-        ),
+        theme: AppTheme.lightTheme,
         home: const MainNavigationScreen(),
       ),
     );

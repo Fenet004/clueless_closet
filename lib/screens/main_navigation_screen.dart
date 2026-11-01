@@ -57,6 +57,7 @@ class _MainNavigationScreenState
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: currentIndex,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: (index) {
             setState(() {
               currentIndex = index;

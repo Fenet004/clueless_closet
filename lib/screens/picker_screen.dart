@@ -669,6 +669,21 @@ class _PickerScreenState extends State<PickerScreen> {
     );
   }
 
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+          color: Colors.black54,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<
@@ -754,6 +769,26 @@ class _PickerScreenState extends State<PickerScreen> {
                     CrossAxisAlignment
                         .stretch,
                 children: [
+                  const Text(
+                    'Build your look',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+
+                  const SizedBox(height: 6),
+
+                  const Text(
+                    'Choose your plans and let your closet do the rest.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
                   _buildWeatherCard(),
 
                   const SizedBox(
@@ -792,13 +827,7 @@ class _PickerScreenState extends State<PickerScreen> {
 
                   const SizedBox(height: 28),
 
-                  const Text(
-                    'TOP',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  _buildSectionTitle('TOP'),
 
                   const SizedBox(height: 8),
 
@@ -828,15 +857,7 @@ class _PickerScreenState extends State<PickerScreen> {
                     height: 24,
                   ),
 
-                  const Text(
-                    'BOTTOM',
-                    textAlign:
-                        TextAlign.center,
-                    style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
-                  ),
+                  _buildSectionTitle('BOTTOM'),
 
                   const SizedBox(
                     height: 8,
@@ -869,15 +890,7 @@ class _PickerScreenState extends State<PickerScreen> {
                     height: 24,
                   ),
 
-                  const Text(
-                    'SHOES',
-                    textAlign:
-                        TextAlign.center,
-                    style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
-                    ),
-                  ),
+                  _buildSectionTitle('SHOES'),
 
                   const SizedBox(
                     height: 8,
