@@ -22,11 +22,11 @@ class SelectionChips extends StatelessWidget {
         Text(
           title,
           style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,

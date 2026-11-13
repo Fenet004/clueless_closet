@@ -9,7 +9,8 @@ import '../bloc/closet_state.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit_history.dart';
 
-class HistoryScreen extends StatelessWidget {
+class HistoryScreen
+    extends StatelessWidget {
   const HistoryScreen({
     super.key,
   });
@@ -28,16 +29,20 @@ class HistoryScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Outfit History',
+          'History',
         ),
       ),
-      body:
-          BlocBuilder<ClosetBloc, ClosetState>(
-        builder: (context, state) {
+      body: BlocBuilder<
+          ClosetBloc,
+          ClosetState>(
+        builder:
+            (context, state) {
           if (state.isLoading) {
             return const Center(
               child:
@@ -55,30 +60,47 @@ class HistoryScreen extends StatelessWidget {
             return const Center(
               child: Padding(
                 padding:
-                    EdgeInsets.all(32),
+                    EdgeInsets.all(
+                  32,
+                ),
                 child: Column(
                   mainAxisAlignment:
                       MainAxisAlignment
                           .center,
                   children: [
                     Icon(
-                      Icons.history,
-                      size: 72,
+                      Icons
+                          .history_outlined,
+                      size: 64,
+                      color:
+                          Colors.black38,
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(
+                      height: 20,
+                    ),
                     Text(
                       'No outfits worn yet',
-                      style: TextStyle(
+                      style:
+                          TextStyle(
                         fontSize: 22,
                         fontWeight:
-                            FontWeight.bold,
+                            FontWeight
+                                .w700,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(
+                      height: 8,
+                    ),
                     Text(
                       'Outfits you mark as worn will appear here.',
                       textAlign:
-                          TextAlign.center,
+                          TextAlign
+                              .center,
+                      style:
+                          TextStyle(
+                        color: Colors
+                            .black54,
+                      ),
                     ),
                   ],
                 ),
@@ -86,57 +108,110 @@ class HistoryScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding:
-                const EdgeInsets.all(16),
-            itemCount: history.length,
-            itemBuilder:
-                (context, index) {
-              final historyItem =
-                  history[index];
+          return Column(
+            crossAxisAlignment:
+                CrossAxisAlignment
+                    .stretch,
+            children: [
+              const Padding(
+                padding:
+                    EdgeInsets
+                        .fromLTRB(
+                  16,
+                  8,
+                  16,
+                  16,
+                ),
+                child: Text(
+                  'Recently worn',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight:
+                        FontWeight
+                            .w800,
+                  ),
+                ),
+              ),
 
-              final top =
-                  _findClothingById(
-                wardrobe,
-                historyItem.topId,
-              );
+              Expanded(
+                child:
+                    ListView.builder(
+                  padding:
+                      const EdgeInsets
+                          .fromLTRB(
+                    16,
+                    0,
+                    16,
+                    24,
+                  ),
+                  itemCount:
+                      history.length,
+                  itemBuilder:
+                      (context, index) {
+                    final historyItem =
+                        history[
+                            index];
 
-              final bottom =
-                  _findClothingById(
-                wardrobe,
-                historyItem.bottomId,
-              );
+                    final top =
+                        _findClothingById(
+                      wardrobe,
+                      historyItem
+                          .topId,
+                    );
 
-              final shoes =
-                  _findClothingById(
-                wardrobe,
-                historyItem.shoeId,
-              );
+                    final bottom =
+                        _findClothingById(
+                      wardrobe,
+                      historyItem
+                          .bottomId,
+                    );
 
-              if (top == null ||
-                  bottom == null ||
-                  shoes == null) {
-                return const SizedBox
-                    .shrink();
-              }
+                    final shoes =
+                        _findClothingById(
+                      wardrobe,
+                      historyItem
+                          .shoeId,
+                    );
 
-              return _HistoryCard(
-                historyItem:
-                    historyItem,
-                top: top,
-                bottom: bottom,
-                shoes: shoes,
-                onDelete: () {
-                  context
-                      .read<ClosetBloc>()
-                      .add(
-                        HistoryDeleted(
-                          historyItem,
-                        ),
-                      );
-                },
-              );
-            },
+                    if (top == null ||
+                        bottom ==
+                            null ||
+                        shoes ==
+                            null) {
+                      return const SizedBox
+                          .shrink();
+                    }
+
+                    return Padding(
+                      padding:
+                          const EdgeInsets
+                              .only(
+                        bottom: 16,
+                      ),
+                      child:
+                          _HistoryCard(
+                        historyItem:
+                            historyItem,
+                        top: top,
+                        bottom:
+                            bottom,
+                        shoes: shoes,
+                        onDelete: () {
+                          context
+                              .read<
+                                  ClosetBloc>()
+                              .add(
+                                HistoryDeleted(
+                                  historyItem,
+                                ),
+                              );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -172,7 +247,9 @@ class _HistoryCard
     }
 
     return Image.file(
-      File(item.imagePath),
+      File(
+        item.imagePath,
+      ),
       height: 90,
       fit: BoxFit.contain,
     );
@@ -181,7 +258,8 @@ class _HistoryCard
   String _formatDate(
     DateTime date,
   ) {
-    final now = DateTime.now();
+    final now =
+        DateTime.now();
 
     final today = DateTime(
       now.year,
@@ -189,7 +267,8 @@ class _HistoryCard
       now.day,
     );
 
-    final historyDate = DateTime(
+    final historyDate =
+        DateTime(
       date.year,
       date.month,
       date.day,
@@ -197,7 +276,9 @@ class _HistoryCard
 
     final difference =
         today
-            .difference(historyDate)
+            .difference(
+              historyDate,
+            )
             .inDays;
 
     if (difference == 0) {
@@ -212,72 +293,109 @@ class _HistoryCard
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Card(
-      margin:
-          const EdgeInsets.only(
-        bottom: 16,
-      ),
       child: Padding(
         padding:
-            const EdgeInsets.all(16),
+            const EdgeInsets.all(
+          16,
+        ),
         child: Column(
           children: [
-            Align(
-              alignment:
-                  Alignment.centerLeft,
-              child: Text(
-                _formatDate(
-                  historyItem.wornAt,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _formatDate(
+                      historyItem
+                          .wornAt,
+                    ),
+                    style:
+                        const TextStyle(
+                      fontSize: 16,
+                      fontWeight:
+                          FontWeight
+                              .w700,
+                    ),
+                  ),
                 ),
-                style:
-                    const TextStyle(
-                  fontSize: 16,
-                  fontWeight:
-                      FontWeight.bold,
+                Text(
+                  '${historyItem.score}% match',
+                  style:
+                      const TextStyle(
+                    color:
+                        Colors.black54,
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(
+              height: 14,
+            ),
+
             Row(
               children: [
                 Expanded(
                   child:
-                      _buildImage(top),
+                      _buildImage(
+                    top,
+                  ),
                 ),
                 const SizedBox(
                   width: 8,
                 ),
                 Expanded(
                   child:
-                      _buildImage(bottom),
+                      _buildImage(
+                    bottom,
+                  ),
                 ),
                 const SizedBox(
                   width: 8,
                 ),
                 Expanded(
                   child:
-                      _buildImage(shoes),
+                      _buildImage(
+                    shoes,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(
+              height: 12,
+            ),
+
             Text(
-              '${top.name} + '
-              '${bottom.name} + '
+              '${top.name} • '
+              '${bottom.name} • '
               '${shoes.name}',
               textAlign:
                   TextAlign.center,
+              style:
+                  const TextStyle(
+                color:
+                    Colors.black54,
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              '${historyItem.score}% match',
+
+            const SizedBox(
+              height: 8,
             ),
-            const SizedBox(height: 8),
-            IconButton(
-              onPressed: onDelete,
-              icon: const Icon(
-                Icons.delete_outline,
+
+            Align(
+              alignment:
+                  Alignment.centerRight,
+              child: IconButton(
+                onPressed:
+                    onDelete,
+                icon: const Icon(
+                  Icons
+                      .delete_outline,
+                ),
               ),
             ),
           ],

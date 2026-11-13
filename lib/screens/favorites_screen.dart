@@ -9,7 +9,8 @@ import '../bloc/closet_state.dart';
 import '../models/clothing_item.dart';
 import '../models/saved_outfit.dart';
 
-class FavoritesScreen extends StatelessWidget {
+class FavoritesScreen
+    extends StatelessWidget {
   const FavoritesScreen({
     super.key,
   });
@@ -28,16 +29,20 @@ class FavoritesScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Favorite Outfits',
+          'Favorites',
         ),
       ),
-      body:
-          BlocBuilder<ClosetBloc, ClosetState>(
-        builder: (context, state) {
+      body: BlocBuilder<
+          ClosetBloc,
+          ClosetState>(
+        builder:
+            (context, state) {
           if (state.isLoading) {
             return const Center(
               child:
@@ -55,30 +60,47 @@ class FavoritesScreen extends StatelessWidget {
             return const Center(
               child: Padding(
                 padding:
-                    EdgeInsets.all(32),
+                    EdgeInsets.all(
+                  32,
+                ),
                 child: Column(
                   mainAxisAlignment:
                       MainAxisAlignment
                           .center,
                   children: [
                     Icon(
-                      Icons.favorite_border,
-                      size: 72,
+                      Icons
+                          .favorite_border,
+                      size: 64,
+                      color:
+                          Colors.black38,
                     ),
-                    SizedBox(height: 20),
+                    SizedBox(
+                      height: 20,
+                    ),
                     Text(
-                      'No favorite outfits yet',
-                      style: TextStyle(
+                      'No favorites yet',
+                      style:
+                          TextStyle(
                         fontSize: 22,
                         fontWeight:
-                            FontWeight.bold,
+                            FontWeight
+                                .w700,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    SizedBox(
+                      height: 8,
+                    ),
                     Text(
-                      'Save outfits you love from the outfit picker.',
+                      'Save outfits you love from the picker.',
                       textAlign:
-                          TextAlign.center,
+                          TextAlign
+                              .center,
+                      style:
+                          TextStyle(
+                        color: Colors
+                            .black54,
+                      ),
                     ),
                   ],
                 ),
@@ -86,57 +108,109 @@ class FavoritesScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding:
-                const EdgeInsets.all(16),
-            itemCount:
-                favorites.length,
-            itemBuilder:
-                (context, index) {
-              final favorite =
-                  favorites[index];
+          return Column(
+            crossAxisAlignment:
+                CrossAxisAlignment
+                    .stretch,
+            children: [
+              const Padding(
+                padding:
+                    EdgeInsets
+                        .fromLTRB(
+                  16,
+                  8,
+                  16,
+                  16,
+                ),
+                child: Text(
+                  'Looks you loved',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight:
+                        FontWeight
+                            .w800,
+                  ),
+                ),
+              ),
 
-              final top =
-                  _findClothingById(
-                wardrobe,
-                favorite.topId,
-              );
+              Expanded(
+                child:
+                    ListView.builder(
+                  padding:
+                      const EdgeInsets
+                          .fromLTRB(
+                    16,
+                    0,
+                    16,
+                    24,
+                  ),
+                  itemCount:
+                      favorites.length,
+                  itemBuilder:
+                      (context, index) {
+                    final favorite =
+                        favorites[
+                            index];
 
-              final bottom =
-                  _findClothingById(
-                wardrobe,
-                favorite.bottomId,
-              );
+                    final top =
+                        _findClothingById(
+                      wardrobe,
+                      favorite.topId,
+                    );
 
-              final shoes =
-                  _findClothingById(
-                wardrobe,
-                favorite.shoeId,
-              );
+                    final bottom =
+                        _findClothingById(
+                      wardrobe,
+                      favorite
+                          .bottomId,
+                    );
 
-              if (top == null ||
-                  bottom == null ||
-                  shoes == null) {
-                return const SizedBox
-                    .shrink();
-              }
+                    final shoes =
+                        _findClothingById(
+                      wardrobe,
+                      favorite
+                          .shoeId,
+                    );
 
-              return _FavoriteOutfitCard(
-                favorite: favorite,
-                top: top,
-                bottom: bottom,
-                shoes: shoes,
-                onDelete: () {
-                  context
-                      .read<ClosetBloc>()
-                      .add(
-                        FavoriteDeleted(
-                          favorite,
-                        ),
-                      );
-                },
-              );
-            },
+                    if (top == null ||
+                        bottom ==
+                            null ||
+                        shoes ==
+                            null) {
+                      return const SizedBox
+                          .shrink();
+                    }
+
+                    return Padding(
+                      padding:
+                          const EdgeInsets
+                              .only(
+                        bottom: 16,
+                      ),
+                      child:
+                          _FavoriteOutfitCard(
+                        favorite:
+                            favorite,
+                        top: top,
+                        bottom:
+                            bottom,
+                        shoes: shoes,
+                        onDelete: () {
+                          context
+                              .read<
+                                  ClosetBloc>()
+                              .add(
+                                FavoriteDeleted(
+                                  favorite,
+                                ),
+                              );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -172,67 +246,100 @@ class _FavoriteOutfitCard
     }
 
     return Image.file(
-      File(item.imagePath),
+      File(
+        item.imagePath,
+      ),
       height: 100,
       fit: BoxFit.contain,
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Card(
-      margin:
-          const EdgeInsets.only(
-        bottom: 16,
-      ),
       child: Padding(
         padding:
-            const EdgeInsets.all(16),
+            const EdgeInsets.all(
+          16,
+        ),
         child: Column(
           children: [
             Row(
               children: [
                 Expanded(
                   child:
-                      _buildImage(top),
+                      _buildImage(
+                    top,
+                  ),
                 ),
                 const SizedBox(
                   width: 8,
                 ),
                 Expanded(
                   child:
-                      _buildImage(bottom),
+                      _buildImage(
+                    bottom,
+                  ),
                 ),
                 const SizedBox(
                   width: 8,
                 ),
                 Expanded(
                   child:
-                      _buildImage(shoes),
+                      _buildImage(
+                    shoes,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+
+            const SizedBox(
+              height: 14,
+            ),
+
             Text(
-              '${favorite.score}% MATCH',
-              style: const TextStyle(
+              '${favorite.score}% match',
+              style:
+                  const TextStyle(
+                fontSize: 18,
                 fontWeight:
-                    FontWeight.bold,
+                    FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
+
+            const SizedBox(
+              height: 6,
+            ),
+
             Text(
-              '${top.name} + '
-              '${bottom.name} + '
+              '${top.name} • '
+              '${bottom.name} • '
               '${shoes.name}',
               textAlign:
                   TextAlign.center,
+              style:
+                  const TextStyle(
+                color:
+                    Colors.black54,
+              ),
             ),
-            const SizedBox(height: 8),
-            IconButton(
-              onPressed: onDelete,
-              icon: const Icon(
-                Icons.delete_outline,
+
+            const SizedBox(
+              height: 8,
+            ),
+
+            Align(
+              alignment:
+                  Alignment.centerRight,
+              child: IconButton(
+                onPressed:
+                    onDelete,
+                icon: const Icon(
+                  Icons
+                      .delete_outline,
+                ),
               ),
             ),
           ],

@@ -65,39 +65,23 @@ class _MainNavigationScreenState
           },
           destinations: const [
             NavigationDestination(
-              icon: Icon(
-                Icons.checkroom_outlined,
-              ),
-              selectedIcon: Icon(
-                Icons.checkroom,
-              ),
+              icon: Icon(Icons.checkroom_outlined),
+              selectedIcon: Icon(Icons.checkroom),
               label: 'Closet',
             ),
             NavigationDestination(
-              icon: Icon(
-                Icons.auto_awesome_outlined,
-              ),
-              selectedIcon: Icon(
-                Icons.auto_awesome,
-              ),
+              icon: Icon(Icons.auto_awesome_outlined),
+              selectedIcon: Icon(Icons.auto_awesome),
               label: 'Picker',
             ),
             NavigationDestination(
-              icon: Icon(
-                Icons.favorite_border,
-              ),
-              selectedIcon: Icon(
-                Icons.favorite,
-              ),
+              icon: Icon(Icons.favorite_border),
+              selectedIcon: Icon(Icons.favorite),
               label: 'Favorites',
             ),
             NavigationDestination(
-              icon: Icon(
-                Icons.history_outlined,
-              ),
-              selectedIcon: Icon(
-                Icons.history,
-              ),
+              icon: Icon(Icons.history_outlined),
+              selectedIcon: Icon(Icons.history),
               label: 'History',
             ),
           ],

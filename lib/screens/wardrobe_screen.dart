@@ -10,7 +10,8 @@ import '../models/clothing_item.dart';
 import 'add_clothing_screen.dart';
 import 'clothing_details_screen.dart';
 
-class WardrobeScreen extends StatelessWidget {
+class WardrobeScreen
+    extends StatelessWidget {
   const WardrobeScreen({
     super.key,
   });
@@ -19,7 +20,8 @@ class WardrobeScreen extends StatelessWidget {
     BuildContext context,
   ) async {
     final ClothingItem? newItem =
-        await Navigator.push<ClothingItem>(
+        await Navigator.push<
+            ClothingItem>(
       context,
       MaterialPageRoute(
         builder: (context) {
@@ -37,15 +39,19 @@ class WardrobeScreen extends StatelessWidget {
     }
 
     context.read<ClosetBloc>().add(
-          ClothingAdded(newItem),
+          ClothingAdded(
+            newItem,
+          ),
         );
   }
 
-  Future<void> _openClothingDetails(
+  Future<void>
+      _openClothingDetails(
     BuildContext context,
     ClothingItem item,
   ) async {
-    final result = await Navigator.push(
+    final result =
+        await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) {
@@ -66,7 +72,9 @@ class WardrobeScreen extends StatelessWidget {
 
     if (result == 'delete') {
       context.read<ClosetBloc>().add(
-            ClothingDeleted(item),
+            ClothingDeleted(
+              item,
+            ),
           );
 
       return;
@@ -74,7 +82,9 @@ class WardrobeScreen extends StatelessWidget {
 
     if (result is ClothingItem) {
       context.read<ClosetBloc>().add(
-            ClothingUpdated(result),
+            ClothingUpdated(
+              result,
+            ),
           );
     }
   }
@@ -84,69 +94,62 @@ class WardrobeScreen extends StatelessWidget {
   ) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding:
+            const EdgeInsets.all(
+          32,
+        ),
         child: Column(
           mainAxisAlignment:
               MainAxisAlignment.center,
           children: [
             const Icon(
-              Icons.checkroom,
-              size: 72,
+              Icons
+                  .checkroom_outlined,
+              size: 64,
+              color: Colors.black38,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(
+              height: 20,
+            ),
             const Text(
               'Your closet is empty',
               style: TextStyle(
                 fontSize: 22,
-                fontWeight: FontWeight.bold,
+                fontWeight:
+                    FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Add your clothes to start building outfits.',
-              textAlign: TextAlign.center,
+            const SizedBox(
+              height: 8,
             ),
-            const SizedBox(height: 24),
+            const Text(
+              'Start by adding a few pieces you love.',
+              textAlign:
+                  TextAlign.center,
+              style: TextStyle(
+                color:
+                    Colors.black54,
+              ),
+            ),
+            const SizedBox(
+              height: 24,
+            ),
             ElevatedButton.icon(
               onPressed: () {
-                _addClothing(context);
+                _addClothing(
+                  context,
+                );
               },
               icon: const Icon(
                 Icons.add,
               ),
               label: const Text(
-                'ADD CLOTHING',
+                'ADD ITEM',
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildWardrobeGrid(
-    BuildContext context,
-    List<ClothingItem> clothingItems,
-  ) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: clothingItems.length,
-      gridDelegate:
-          const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.72,
-      ),
-      itemBuilder: (context, index) {
-        final item =
-            clothingItems[index];
-
-        return _buildClothingCard(
-          context,
-          item,
-        );
-      },
     );
   }
 
@@ -154,78 +157,172 @@ class WardrobeScreen extends StatelessWidget {
     BuildContext context,
     ClothingItem item,
   ) {
-    return GestureDetector(
-      onTap: () {
-        _openClothingDetails(
-          context,
-          item,
-        );
-      },
-      child: Container(
-        padding:
-            const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(),
-          borderRadius:
-              BorderRadius.circular(
-            16,
+    return Card(
+      clipBehavior:
+          Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          _openClothingDetails(
+            context,
+            item,
+          );
+        },
+        child: Padding(
+          padding:
+              const EdgeInsets.all(
+            12,
           ),
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: item.isAssetImage
-                  ? Image.asset(
-                      item.imagePath,
-                      fit: BoxFit.contain,
-                    )
-                  : Image.file(
-                      File(
-                        item.imagePath,
-                      ),
-                      fit: BoxFit.contain,
-                    ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              item.name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontWeight:
-                    FontWeight.bold,
+          child: Column(
+            children: [
+              Expanded(
+                child:
+                    item.isAssetImage
+                        ? Image.asset(
+                            item
+                                .imagePath,
+                            fit:
+                                BoxFit
+                                    .contain,
+                          )
+                        : Image.file(
+                            File(
+                              item
+                                  .imagePath,
+                            ),
+                            fit:
+                                BoxFit
+                                    .contain,
+                          ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              item.category,
-              style: const TextStyle(
-                fontSize: 12,
+
+              const SizedBox(
+                height: 12,
               ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              item.color,
-              style: const TextStyle(
-                fontSize: 12,
+
+              Text(
+                item.name,
+                textAlign:
+                    TextAlign.center,
+                maxLines: 1,
+                overflow:
+                    TextOverflow
+                        .ellipsis,
+                style:
+                    const TextStyle(
+                  fontWeight:
+                      FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+
+              const SizedBox(
+                height: 4,
+              ),
+
+              Text(
+                '${item.color} • ${item.category}',
+                textAlign:
+                    TextAlign.center,
+                style:
+                    const TextStyle(
+                  fontSize: 12,
+                  color:
+                      Colors.black54,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _buildWardrobe(
+    BuildContext context,
+    List<ClothingItem>
+        clothingItems,
+  ) {
+    return Column(
+      children: [
+        Padding(
+          padding:
+              const EdgeInsets
+                  .fromLTRB(
+            16,
+            8,
+            16,
+            12,
+          ),
+          child: Row(
+            mainAxisAlignment:
+                MainAxisAlignment
+                    .spaceBetween,
+            children: [
+              Text(
+                '${clothingItems.length} items',
+                style:
+                    const TextStyle(
+                  color:
+                      Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        Expanded(
+          child: GridView.builder(
+            padding:
+                const EdgeInsets
+                    .fromLTRB(
+              16,
+              0,
+              16,
+              100,
+            ),
+            itemCount:
+                clothingItems.length,
+            gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing:
+                  12,
+              mainAxisSpacing: 12,
+              childAspectRatio:
+                  0.72,
+            ),
+            itemBuilder:
+                (context, index) {
+              final item =
+                  clothingItems[
+                      index];
+
+              return _buildClothingCard(
+                context,
+                item,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+  ) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
           'My Closet',
         ),
       ),
-      body:
-          BlocBuilder<ClosetBloc, ClosetState>(
-        builder: (context, state) {
+
+      body: BlocBuilder<
+          ClosetBloc,
+          ClosetState>(
+        builder:
+            (context, state) {
           if (state.isLoading) {
             return const Center(
               child:
@@ -236,28 +333,33 @@ class WardrobeScreen extends StatelessWidget {
           final clothingItems =
               state.wardrobe;
 
-          if (clothingItems.isEmpty) {
+          if (clothingItems
+              .isEmpty) {
             return _buildEmptyState(
               context,
             );
           }
 
-          return _buildWardrobeGrid(
+          return _buildWardrobe(
             context,
             clothingItems,
           );
         },
       ),
+
       floatingActionButton:
-          FloatingActionButton.extended(
+          FloatingActionButton
+              .extended(
         onPressed: () {
-          _addClothing(context);
+          _addClothing(
+            context,
+          );
         },
         icon: const Icon(
           Icons.add,
         ),
         label: const Text(
-          'Add Clothing',
+          'Add item',
         ),
       ),
     );

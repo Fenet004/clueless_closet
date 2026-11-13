@@ -18,102 +18,114 @@ class ClothingPicker extends StatelessWidget {
     this.enabled = true,
   });
 
+  Widget _buildArrowButton({
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon),
+      ),
+    );
+  }
+
+  Widget _buildImage() {
+    if (item.isAssetImage) {
+      return Image.asset(
+        item.imagePath,
+        key: ValueKey(item.imagePath),
+        fit: BoxFit.contain,
+      );
+    }
+
+    return Image.file(
+      File(item.imagePath),
+      key: ValueKey(item.imagePath),
+      fit: BoxFit.contain,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment:
-          MainAxisAlignment.center,
       children: [
-        IconButton(
-          onPressed:
-              enabled ? onPrevious : null,
-          icon: const Icon(
-            Icons.chevron_left,
-            size: 40,
-          ),
+        _buildArrowButton(
+          icon: Icons.chevron_left,
+          onPressed: enabled
+              ? onPrevious
+              : null,
         ),
+        
+        const SizedBox(width: 10),
+
         Expanded(
           child: Container(
-            height: 210,
-            padding:
-                const EdgeInsets.all(12),
+            height: 230,
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              border: Border.all(),
-              borderRadius:
-                  BorderRadius.circular(
-                18,
+              color: Colors.white,
+              border: Border.all(
+                color: Colors.black12,
               ),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               children: [
                 Expanded(
                   child: AnimatedSwitcher(
-                    duration:
-                        const Duration(
+                    duration: const Duration(
                       milliseconds: 180,
                     ),
-                    child:
-                        item.isAssetImage
-                            ? Image.asset(
-                                item.imagePath,
-                                key: ValueKey(
-                                  item.imagePath,
-                                ),
-                                fit:
-                                    BoxFit.contain,
-                              )
-                            : Image.file(
-                                File(
-                                  item.imagePath,
-                                ),
-                                key: ValueKey(
-                                  item.imagePath,
-                                ),
-                                fit:
-                                    BoxFit.contain,
-                              ),
+                    child: _buildImage(),
                   ),
                 ),
-                const SizedBox(height: 8),
+
+                const SizedBox(height: 12),
+
                 AnimatedSwitcher(
-                  duration:
-                      const Duration(
+                  duration: const Duration(
                     milliseconds: 180,
                   ),
                   child: Text(
                     item.name,
-                    key: ValueKey(
-                      item.name,
-                    ),
-                    textAlign:
-                        TextAlign.center,
-                    style:
-                        const TextStyle(
-                      fontSize: 16,
-                      fontWeight:
-                          FontWeight.bold,
+                    key: ValueKey(item.name),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 4),
+
                 Text(
-                  item.color,
-                  style:
-                      const TextStyle(
+                  '${item.color} • ${item.style}',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
                     fontSize: 13,
+                    color: Colors.black54,
                   ),
                 ),
               ],
             ),
           ),
         ),
-        IconButton(
-          onPressed:
-              enabled ? onNext : null,
-          icon: const Icon(
-            Icons.chevron_right,
-            size: 40,
-          ),
+
+        const SizedBox(width: 10),
+
+        _buildArrowButton(
+          icon: Icons.chevron_right,
+          onPressed: enabled
+              ? onNext
+              : null,
         ),
       ],
     );
