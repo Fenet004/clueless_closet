@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/clothing_item.dart';
+import '../services/image_storage_service.dart';
 
 class EditClothingScreen extends StatefulWidget {
   final ClothingItem item;
@@ -19,6 +20,7 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   final ImagePicker _imagePicker = ImagePicker();
+  final ImageStorageService _imageStorageService = ImageStorageService();
 
   XFile? selectedImage;
   late String selectedCategory;
@@ -27,6 +29,8 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
   late int warmthLevel;
   late bool rainSuitable;
   late bool waterResistant;
+
+  bool isSaving = false;
 
   final List<String> categories = [
     'Top',
@@ -117,23 +121,78 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
     );
   }
 
-  void saveChanges() {
+  Future<void> saveChanges() async {
+    if (isSaving) {
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final updatedItem = widget.item.copyWith(
-      name: _nameController.text.trim(),
-      category: selectedCategory,
-      color: selectedColor,
-      imagePath: selectedImage?.path ?? widget.item.imagePath,
-      isAssetImage: selectedImage == null ? widget.item.isAssetImage : false,
-      warmthLevel: warmthLevel,
-      rainSuitable: rainSuitable,
-      waterResistant: waterResistant,
-    );
+    setState(() {
+      isSaving = true;
+    });
 
-    Navigator.pop(context, updatedItem);
+    try {
+      String imagePath = widget.item.imagePath;
+      bool isAssetImage = widget.item.isAssetImage;
+      
+      if (selectedImage != null) {
+        imagePath = await _imageStorageService.saveImage(selectedImage!.path);
+        isAssetImage = false;
+      }
+
+      final updatedItem = widget.item.copyWith(
+        name: _nameController.text.trim(),
+        category: selectedCategory,
+        color: selectedColor,
+        imagePath: imagePath,
+        isAssetImage: isAssetImage,
+        warmthLevel: warmthLevel,
+        rainSuitable: rainSuitable,
+        waterResistant: waterResistant,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.pop(context, updatedItem);
+    } catch (e) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not save the new image.',
+          ),
+        ),
+      );
+    }
+  }
+
+  String _warmthLabel(int level) {
+    switch (level) {
+      case 1:
+        return 'Very light';
+      case 2:
+        return 'Light';
+      case 3:
+        return 'Medium';
+      case 4:
+        return 'Warm';
+      case 5:
+        return 'Very warm';
+      default:
+        return 'Medium';
+    }
   }
 
   @override
@@ -165,9 +224,12 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               GestureDetector(
-                onTap: showImageSourceOptions,
+                onTap: isSaving
+                    ? null
+                    : showImageSourceOptions,
                 child: SizedBox(
                   width: double.infinity,
                   height: 220,
@@ -182,6 +244,7 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
 
               TextFormField(
                 controller: _nameController,
+                enabled: !isSaving,
                 decoration: const InputDecoration(
                   labelText: 'Name',
                   border: OutlineInputBorder(),
@@ -209,15 +272,17 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
                     child: Text(category),
                   );
                 }).toList(),
-                onChanged: (value) {
-                  if (value == null) {
-                    return;
-                  }
+                onChanged: isSaving
+                    ? null
+                    : (value) {
+                        if (value == null) {
+                          return;
+                        }
 
-                  setState(() {
-                    selectedCategory = value;
-                  });
-                },
+                        setState(() {
+                          selectedCategory = value;
+                        });
+                      },
               ),
 
               const SizedBox(height: 20),
@@ -234,27 +299,97 @@ class _EditClothingScreenState extends State<EditClothingScreen> {
                     child: Text(color),
                   );
                 }).toList(),
-                onChanged: (value) {
-                  if (value == null) {
-                    return;
-                  }
+                onChanged: isSaving
+                    ? null
+                    : (value) {
+                        if (value == null) {
+                          return;
+                        }
 
-                  setState(() {
-                    selectedColor = value;
-                  });
-                },
+                        setState(() {
+                          selectedColor = value;
+                        });
+                      },
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: saveChanges,
-                  child: const Text(
-                    'SAVE CHANGES',
-                  ),
+              const Text(
+                'Warmth Level',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+
+              Slider(
+                value: warmthLevel.toDouble(),
+                min: 1,
+                max: 5,
+                divisions: 4,
+                label: warmthLevel.toString(),
+                onChanged: isSaving
+                    ? null
+                    : (value) {
+                        setState(() {
+                          warmthLevel = value.round();
+                        });
+                      },
+              ),
+
+              Text(
+                _warmthLabel(warmthLevel),
+              ),
+
+              const SizedBox(height: 12),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Suitable for rain'),
+                subtitle: const Text(
+                  'Comfortable to wear in rainy conditions',
+                ),
+                value: rainSuitable,
+                onChanged: isSaving
+                    ? null
+                    : (value) {
+                        setState(() {
+                          rainSuitable = value;
+                        });
+                      },
+              ),
+
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Water resistant'),
+                subtitle: const Text(
+                  'The item can resist light water exposure',
+                ),
+                value: waterResistant,
+                onChanged: isSaving
+                    ? null
+                    : (value) {
+                        setState(() {
+                          waterResistant = value;
+                        });
+                      },
+              ),
+
+              const SizedBox(height: 24),
+
+              ElevatedButton(
+                onPressed: isSaving
+                    ? null
+                    : saveChanges,
+                child: isSaving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text('SAVE CHANGES'),
               ),
             ],
           ),
